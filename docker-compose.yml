@@ -1,0 +1,13 @@
+version: '3.9'
+name: mediamine-collection
+services:
+  collection-web-scraper:
+    image: mediamine/collection-web-scraper:latest
+    container_name: mediamine-collection-web-scraper
+    volumes:
+      - ./logs/:/var/logs/
+    restart: always
+    deploy:
+      restart_policy:
+        condition: any # Restart on any failure or completion
+        delay: 3600s # Set a delay of 1 hour between restarts
