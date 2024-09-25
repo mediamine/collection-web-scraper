@@ -22,7 +22,7 @@ export class CompleteScanService {
   }
 
   async scan({ feed: { id, name, url }, feedScraper }): Promise<void> {
-    this.logger.log(`invoked ${this.scan.name} with ${JSON.stringify({ id, name, url })} of type: ${feedScraper}`);
+    this.logger.log(`Invoked ${this.scan.name} with ${JSON.stringify({ id, name, url })} of type: ${feedScraper}`);
 
     this.logger.log(`Navigating to ${url}`);
     const { page } = await this.playwrightService.openBrowser({ url });
@@ -70,7 +70,11 @@ export class CompleteScanService {
     this.logger.log(`Scraping article pages for News Items: [${existingNewsItemHashWithNoPageText.map((ni) => ni.id)}]`);
     for (const [, newsItem] of existingNewsItemHashWithNoPageText.entries()) {
       const { id, link } = newsItem;
-      if (link && !/https[^\s]+https[^\s]+/.test(link)) {
+      if (
+        link &&
+        !/https[^\s]+https[^\s]+/.test(link) &&
+        !['www.ensemblemagazine.co.nz', 'sponsoredinteractive.stuff.co.nz'].some((d) => link.includes(d))
+      ) {
         try {
           const { text } = await feedScraperService.scanArticle({ page, url: link });
           this.logger.log(`Persisting Page Text: ${text.slice(0, 15)}...${text.slice(-15)} for News Item: ${id}`);
@@ -86,7 +90,7 @@ export class CompleteScanService {
 
     this.logger.debug('Update Last Download Date in db.');
     await this.prismaService.feed.update({
-      where: { id: id },
+      where: { id },
       data: { last_download_date: new Date() }
     });
 

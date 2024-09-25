@@ -19,6 +19,8 @@ export class GroupAService implements ScannerProps {
   }
 
   async getLinks({ page, url }: ScanFnProps, section: string): Promise<Array<ArticleLinkProps>> {
+    await page.reload();
+
     // Navigate to the section page
     await page.locator('#mastheads_menu').waitFor();
     await page.locator('#mastheads_menu').click();
@@ -53,12 +55,12 @@ export class GroupAService implements ScannerProps {
 
   async scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
     await page.goto(url);
-    await page.locator('.stuff-article').waitFor();
+    await page.locator('section.page-content').waitFor();
 
     // Article Text
     const textContents: Array<string> = ([] as Array<string>).concat(
-      await page.locator('div.text-block > p').allTextContents(),
-      await page.locator('div.paywall > div.text-block > p').allTextContents()
+      await page.locator('div.content-block > p').allTextContents(),
+      await page.locator('div.content-block > div.paywall > p').allTextContents()
     );
 
     return {

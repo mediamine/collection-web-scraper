@@ -12,5 +12,5 @@ export const NEWS_ITEM_SOURCE_TIMARU_HERALD = 'Timaru Herald';
 export const NEWS_ITEM_SOURCE_SOUTHLAND_TIMES = 'Southland Times';
 
 export const NEWS_ITEM_SOURCE_STUFF = 'Stuff';
-export const NEWS_ITEM_SOURCE_NBR = 'National Business Review';
+export const NEWS_ITEM_SOURCE_NATIONAL_BUSINESS_REVIEW = 'National Business Review';
 export const NEWS_ITEM_SOURCE_BUSINESS_DESK = 'Business Desk';

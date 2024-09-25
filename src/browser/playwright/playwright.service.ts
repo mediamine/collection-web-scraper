@@ -20,9 +20,11 @@ export class PlaywrightService {
   }
 
   async openBrowser({ url }: { url: string }) {
+    const HEADLESS = 'HEADLESS';
+
     this.logger.debug('Opening a browser instance.');
     this.browser = await chromium.launch({
-      headless: true, // !process.argv.slice(2).includes('--headed'), // setting this to true will not run the UI
+      headless: this.configService.get<string>(HEADLESS, 'true') === 'true',
       logger: {
         isEnabled: () => true,
         log: (name, severity, message) => {
@@ -44,6 +46,7 @@ export class PlaywrightService {
   async closeBrowser() {
     this.logger.debug(`Closing the browser instance`);
     await this.context?.close();
+    await this.browser.close();
   }
 
   async closeAllBrowsers() {
