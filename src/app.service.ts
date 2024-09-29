@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  FEEDS_TO_IDS_COMPLETE_SCAN,
+  FEEDS_TO_IDS_PAGE_TEXT_SCAN,
+  WORKFLOW,
+  WORKFLOW_COMPLETE_SCAN,
+  WORKFLOW_PAGE_TEXT_SCAN
+} from './constant';
 import { PrismaService } from './db';
 import { WinstonLoggerService } from './logger';
 import { PageTextScanService } from './workflow';
@@ -20,51 +27,58 @@ export class AppService {
   async scrape(): Promise<void> {
     this.logger.log('Invoking a scraping session');
 
-    const FEEDS_TO_IDS_COMPLETE_SCAN = 'FEEDS_TO_IDS_COMPLETE_SCAN';
-    const FEEDS_TO_IDS_PAGE_TEXT_SCAN = 'FEEDS_TO_IDS_PAGE_TEXT_SCAN';
+    const workflow = this.configService.get<string>(WORKFLOW) ?? '';
 
-    try {
-      const feedsToIdsCompleteScan: Record<string, Array<string>> = JSON.parse(
-        this.configService.get<string>(FEEDS_TO_IDS_COMPLETE_SCAN) ?? '{}'
-      );
+    switch (workflow) {
+      case WORKFLOW_COMPLETE_SCAN:
+        try {
+          const feedsToIdsCompleteScan: Record<string, Array<string>> = JSON.parse(
+            this.configService.get<string>(FEEDS_TO_IDS_COMPLETE_SCAN) ?? '{}'
+          );
 
-      const feeds = Object.entries(feedsToIdsCompleteScan).reduce((memo, [feedType, feedIds]) => {
-        feedIds.forEach((f) => {
-          memo[f] = feedType;
-        });
-        return memo;
-      }, {});
-      this.logger.debug(`Received feeds for complete scans: ${JSON.stringify(feeds)}`);
+          const feeds = Object.entries(feedsToIdsCompleteScan).reduce((memo, [feedType, feedIds]) => {
+            feedIds.forEach((f) => {
+              memo[f] = feedType;
+            });
+            return memo;
+          }, {});
+          this.logger.debug(`Received feeds for complete scans: ${JSON.stringify(feeds)}`);
 
-      for (const feedId of Object.keys(feeds)) {
-        const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
+          for (const feedId of Object.keys(feeds)) {
+            const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
 
-        await this.completeScanService.scan({ feed, feedScraper: feeds[feedId] });
-      }
-    } catch (e) {
-      this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_COMPLETE_SCAN}. ${e.message}`);
-    }
+            await this.completeScanService.scan({ feed, feedScraper: feeds[feedId] });
+          }
+        } catch (e) {
+          this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_COMPLETE_SCAN}. ${e.message}`);
+        }
+        break;
 
-    try {
-      const feedsToIdsPageTextScan: Record<string, Array<string>> = JSON.parse(
-        this.configService.get<string>(FEEDS_TO_IDS_PAGE_TEXT_SCAN) ?? '{}'
-      );
+      case WORKFLOW_PAGE_TEXT_SCAN:
+        try {
+          const feedsToIdsPageTextScan: Record<string, Array<string>> = JSON.parse(
+            this.configService.get<string>(FEEDS_TO_IDS_PAGE_TEXT_SCAN) ?? '{}'
+          );
 
-      const feeds = Object.entries(feedsToIdsPageTextScan).reduce((memo, [feedType, feedIds]) => {
-        feedIds.forEach((f) => {
-          memo[f] = feedType;
-        });
-        return memo;
-      }, {});
-      this.logger.debug(`Received feeds for page text scans: ${JSON.stringify(feeds)}`);
+          const feeds = Object.entries(feedsToIdsPageTextScan).reduce((memo, [feedType, feedIds]) => {
+            feedIds.forEach((f) => {
+              memo[f] = feedType;
+            });
+            return memo;
+          }, {});
+          this.logger.debug(`Received feeds for page text scans: ${JSON.stringify(feeds)}`);
 
-      for (const feedId of Object.keys(feeds)) {
-        const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
+          for (const feedId of Object.keys(feeds)) {
+            const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
 
-        await this.pageTextScanService.scan({ feed, feedScraper: feeds[feedId] });
-      }
-    } catch (e) {
-      this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_PAGE_TEXT_SCAN}. ${e.message}`);
+            await this.pageTextScanService.scan({ feed, feedScraper: feeds[feedId] });
+          }
+        } catch (e) {
+          this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_PAGE_TEXT_SCAN}. ${e.message}`);
+        }
+        break;
+
+      default:
     }
   }
 }

@@ -1,13 +1,26 @@
-version: '3.9'
 name: mediamine-collection
 services:
-  collection-web-scraper:
+  collection-web-scraper-complete-scan:
     image: mediamine/collection-web-scraper:latest
-    container_name: mediamine-collection-web-scraper
+    container_name: mediamine-collection-web-scraper-complete-scan
+    environment:
+      WORKFLOW: WORKFLOW_COMPLETE_SCAN
     volumes:
-      - ./logs/:/var/logs/
+      - ./logs/complete-scan/:/var/logs/
     restart: always
-    deploy:
-      restart_policy:
-        condition: any # Restart on any failure or completion
-        delay: 3600s # Set a delay of 1 hour between restarts
+    # deploy:
+    #   restart_policy:
+    #     condition: any # Restart on any failure or completion
+    #     delay: 3600s # Set a delay of 1 hour between restarts
+  collection-web-scraper-page-text-scan:
+    image: mediamine/collection-web-scraper:latest
+    container_name: mediamine-collection-web-scraper-page-text-scan
+    environment:
+      WORKFLOW: WORKFLOW_PAGE_TEXT_SCAN
+    volumes:
+      - ./logs/page-text-scan/:/var/logs/
+    restart: always
+    # deploy:
+    #   restart_policy:
+    #     condition: any # Restart on any failure or completion
+    #     delay: 1800s # Set a delay of 1 hour between restarts
