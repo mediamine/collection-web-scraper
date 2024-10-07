@@ -13,6 +13,9 @@ export class GroupBService implements ScannerProps {
   async authenticate({}: AuthenticateFnProps) {}
 
   async getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
+    // TODO: temp. hardcoding till a better solution is found
+    url = 'https://www.stuff.co.nz';
+
     // Wait for page to load
     await page.locator('div.stuff-box.story1.lead a').waitFor();
     await page.locator('div.stuff-box.story2 a').waitFor();

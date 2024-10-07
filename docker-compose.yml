@@ -7,7 +7,7 @@ services:
       WORKFLOW: WORKFLOW_COMPLETE_SCAN
     volumes:
       - ./logs/complete-scan/:/var/logs/
-    restart: always
+    # restart: always
     # deploy:
     #   restart_policy:
     #     condition: any # Restart on any failure or completion
@@ -19,7 +19,7 @@ services:
       WORKFLOW: WORKFLOW_PAGE_TEXT_SCAN
     volumes:
       - ./logs/page-text-scan/:/var/logs/
-    restart: always
+    # restart: always
     # deploy:
     #   restart_policy:
     #     condition: any # Restart on any failure or completion

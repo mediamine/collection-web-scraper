@@ -1,7 +1,7 @@
 FROM node:20-bookworm
 
 # Install playwright with deps
-RUN npx -y playwright@1.47.1 install --with-deps
+RUN npx -y playwright@1.47.1 install --with-deps chromium
 
 # Create app directory
 WORKDIR /usr/src/app

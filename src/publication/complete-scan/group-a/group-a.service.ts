@@ -59,8 +59,8 @@ export class GroupAService implements ScannerProps {
 
     // Article Text
     const textContents: Array<string> = ([] as Array<string>).concat(
-      await page.locator('div.content-block > p').allTextContents(),
-      await page.locator('div.content-block > div.paywall > p').allTextContents()
+      await page.locator('div.text-block > p').allTextContents(),
+      await page.locator('div.text-block > div.paywall > p').allTextContents()
     );
 
     return {
