@@ -1,0 +1,17 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.7.5"
+  },
+  "scripts": {
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "playwright-msteams-reporter": "^0.0.12",
+    "rss-parser": "^3.13.0"
+  }
+}
