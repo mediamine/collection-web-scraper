@@ -3,14 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import {
   FEEDS_TO_IDS_COMPLETE_SCAN,
   FEEDS_TO_IDS_PAGE_TEXT_SCAN,
+  FEEDS_TO_IDS_RSS_SCAN,
   WORKFLOW,
   WORKFLOW_COMPLETE_SCAN,
-  WORKFLOW_PAGE_TEXT_SCAN
+  WORKFLOW_PAGE_TEXT_SCAN,
+  WORKFLOW_RSS_SCAN
 } from './constant';
 import { PrismaService } from './db';
 import { WinstonLoggerService } from './logger';
-import { PageTextScanService } from './workflow';
-import { CompleteScanService } from './workflow/complete-scan/complete-scan.service';
+import { CompleteScanService, PageTextScanService, RssScanService } from './workflow';
 
 @Injectable()
 export class AppService {
@@ -19,7 +20,8 @@ export class AppService {
     private logger: WinstonLoggerService,
     private prismaService: PrismaService,
     private completeScanService: CompleteScanService,
-    private pageTextScanService: PageTextScanService
+    private pageTextScanService: PageTextScanService,
+    private rssScanService: RssScanService
   ) {
     this.logger.setContext(AppService.name);
   }
@@ -47,7 +49,11 @@ export class AppService {
           for (const feedId of Object.keys(feeds)) {
             const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
 
-            await this.completeScanService.scan({ feed, feedScraper: feeds[feedId] });
+            try {
+              await this.completeScanService.scan({ feed, feedScraper: feeds[feedId] });
+            } catch (e) {
+              this.logger.error(`Failed scan for: ${feed.name}. ${e.message}`);
+            }
           }
         } catch (e) {
           this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_COMPLETE_SCAN}. ${e.message}`);
@@ -71,10 +77,42 @@ export class AppService {
           for (const feedId of Object.keys(feeds)) {
             const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
 
-            await this.pageTextScanService.scan({ feed, feedScraper: feeds[feedId] });
+            try {
+              await this.pageTextScanService.scan({ feed, feedScraper: feeds[feedId] });
+            } catch (e) {
+              this.logger.error(`Failed scan for: ${feed.name}. ${e.message}`);
+            }
           }
         } catch (e) {
           this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_PAGE_TEXT_SCAN}. ${e.message}`);
+        }
+        break;
+
+      case WORKFLOW_RSS_SCAN:
+        try {
+          const feedsToIdsRSSScan: Record<string, Array<string>> = JSON.parse(
+            this.configService.get<string>(FEEDS_TO_IDS_RSS_SCAN) ?? '{}'
+          );
+
+          const feeds = Object.entries(feedsToIdsRSSScan).reduce((memo, [feedType, feedIds]) => {
+            feedIds.forEach((f) => {
+              memo[f] = feedType;
+            });
+            return memo;
+          }, {});
+          this.logger.debug(`Received feeds for rss scans: ${JSON.stringify(feeds)}`);
+
+          for (const feedId of Object.keys(feeds)) {
+            const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
+
+            try {
+              await this.rssScanService.scan({ feed, feedScraper: feeds[feedId] });
+            } catch (e) {
+              this.logger.error(`Failed scan for: ${feed.name}. ${e.message}`);
+            }
+          }
+        } catch (e) {
+          this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_RSS_SCAN}. ${e.message}`);
         }
         break;
 
