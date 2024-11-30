@@ -4,30 +4,15 @@ import { WinstonLoggerService } from 'src/logger';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps, ScannerProps } from '../../types';
 
 @Injectable()
-export class GroupAService implements ScannerProps {
+export class GroupCService implements ScannerProps {
   constructor(
     protected configService: ConfigService,
     protected logger: WinstonLoggerService
   ) {}
 
-  async authenticate({ page }: AuthenticateFnProps) {
-    await page.getByRole('button', { name: 'Log In' }).click();
-    await page.getByLabel('Email address').fill(this.configService.get('STUFF_LOGIN_USERNAME'));
-    await page.getByLabel('Password').fill(this.configService.get('STUFF_LOGIN_PASSWORD'));
-    await page.getByRole('button', { name: 'Log in' }).click();
-    await page.locator('#mastheads_menu').waitFor();
-  }
+  async authenticate({}: AuthenticateFnProps) {}
 
-  async getLinks({ page, url }: ScanFnProps, section: string): Promise<Array<ArticleLinkProps>> {
-    await page.reload();
-
-    // Navigate to the section page
-    await page.locator('#mastheads_menu').waitFor();
-    await page.locator('#mastheads_menu').click();
-
-    await page.getByRole('link', { name: section, exact: true }).waitFor();
-    await page.getByRole('link', { name: section, exact: true }).click();
-
+  async getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
     // Wait for page to load
     await page.locator('div.story-list-medium-container').first().waitFor();
     await page.locator('div.list-stories-frame > div.stories-block').waitFor();
@@ -49,8 +34,18 @@ export class GroupAService implements ScannerProps {
     );
   }
 
-  async scanHome({}: ScanFnProps): Promise<Array<ArticleLinkProps>> {
-    return [];
+  async scanHome({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
+    await page.locator('section.page-content').waitFor();
+
+    try {
+      // Create a list of all links
+      const newsItems: Array<ArticleLinkProps> = ([] as Array<ArticleLinkProps>).concat(await this.getLinks({ page, url }));
+
+      return newsItems;
+    } catch (e: any) {
+      console.error(e.message);
+      return [];
+    }
   }
 
   async scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
@@ -68,10 +63,5 @@ export class GroupAService implements ScannerProps {
     };
   }
 
-  async logout({ page }: AuthenticateFnProps) {
-    await page.getByRole('button', { name: 'M', exact: true }).waitFor();
-    await page.getByRole('button', { name: 'M', exact: true }).click();
-    await page.getByRole('button', { name: 'Log Out' }).click();
-    await page.locator('#mastheads_menu').waitFor();
-  }
+  async logout({}: AuthenticateFnProps) {}
 }

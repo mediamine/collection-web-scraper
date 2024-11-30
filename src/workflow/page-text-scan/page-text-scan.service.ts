@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { DateTime } from 'luxon';
 import { PlaywrightService } from 'src/browser';
 import { PrismaService } from 'src/db';
 import { WinstonLoggerService } from 'src/logger';
 import { ScannerProps } from 'src/publication/types';
+import { isPageTextScanExcludedConditions } from './excluded-conditions';
 
 @Injectable()
 export class PageTextScanService {
   constructor(
     private readonly moduleRef: ModuleRef,
-    private configService: ConfigService,
     private logger: WinstonLoggerService,
     private prismaService: PrismaService,
     private playwrightService: PlaywrightService
@@ -41,7 +40,7 @@ export class PageTextScanService {
         this.logger.log(`Scraping article pages for News Items: [${existingNewsItemHashWithNoPageText.map((ni) => ni.id)}]`);
         for (const [, newsItem] of existingNewsItemHashWithNoPageText.entries()) {
           const { id, link } = newsItem;
-          if (link) {
+          if (link && !isPageTextScanExcludedConditions(link)) {
             try {
               const { text } = await feedScraperService.scanArticle({ page, url: link });
               this.logger.log(`Persisting Page Text: ${text.slice(0, 25)}... for News Item: ${id}`);

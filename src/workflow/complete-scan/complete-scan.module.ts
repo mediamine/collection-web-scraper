@@ -2,27 +2,43 @@ import { Module } from '@nestjs/common';
 import { PlaywrightService } from 'src/browser';
 import {
   NEWS_ITEM_SOURCE_MANAWATU_STANDARD,
+  NEWS_ITEM_SOURCE_MANAWATU_STANDARD_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_MARLBOROUGH_EXPRESS,
+  NEWS_ITEM_SOURCE_MARLBOROUGH_EXPRESS_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_NELSON_MAIL,
+  NEWS_ITEM_SOURCE_NELSON_MAIL_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_SOUTHLAND_TIMES,
+  NEWS_ITEM_SOURCE_SOUTHLAND_TIMES_SUBSCRIPTION,
+  NEWS_ITEM_SOURCE_SUNDAY_STAR_TIMES_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS,
+  NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_THE_POST,
   NEWS_ITEM_SOURCE_THE_PRESS,
   NEWS_ITEM_SOURCE_TIMARU_HERALD,
-  NEWS_ITEM_SOURCE_WAIKATO_TIMES
+  NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION,
+  NEWS_ITEM_SOURCE_WAIKATO_TIMES,
+  NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION
 } from 'src/constant/feedScrapers';
 import { PrismaService } from 'src/db';
 import { WinstonLoggerService } from 'src/logger';
 import {
   ManawatuStandardService,
+  ManawatuStandardSubscriptionService,
   MarlboroughExpressService,
+  MarlboroughExpressSubscriptionService,
   NelsonMailService,
+  NelsonMailSubscriptionService,
   SouthlandTimesService,
+  SouthlandTimesSubscriptionService,
+  SundayStarTimesSubscriptionService,
   TaranakiDailyNewsService,
+  TaranakiDailyNewsSubscriptionService,
   ThePostService,
   ThePressService,
   TimaruHeraldService,
-  WaikatoTimesService
+  TimaruHeraldSubscriptionService,
+  WaikatoTimesService,
+  WairarapaTimesAgeSubscriptionService
 } from 'src/publication/complete-scan';
 import { CompleteScanService } from './complete-scan.service';
 
@@ -40,7 +56,15 @@ import { CompleteScanService } from './complete-scan.service';
     { provide: NEWS_ITEM_SOURCE_NELSON_MAIL, useClass: NelsonMailService },
     { provide: NEWS_ITEM_SOURCE_SOUTHLAND_TIMES, useClass: SouthlandTimesService },
     { provide: NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS, useClass: TaranakiDailyNewsService },
-    { provide: NEWS_ITEM_SOURCE_TIMARU_HERALD, useClass: TimaruHeraldService }
+    { provide: NEWS_ITEM_SOURCE_TIMARU_HERALD, useClass: TimaruHeraldService },
+    { provide: NEWS_ITEM_SOURCE_MANAWATU_STANDARD_SUBSCRIPTION, useClass: ManawatuStandardSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_MARLBOROUGH_EXPRESS_SUBSCRIPTION, useClass: MarlboroughExpressSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_NELSON_MAIL_SUBSCRIPTION, useClass: NelsonMailSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_SOUTHLAND_TIMES_SUBSCRIPTION, useClass: SouthlandTimesSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_SUNDAY_STAR_TIMES_SUBSCRIPTION, useClass: SundayStarTimesSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS_SUBSCRIPTION, useClass: TaranakiDailyNewsSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION, useClass: TimaruHeraldSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION, useClass: WairarapaTimesAgeSubscriptionService }
   ],
   exports: [
     CompleteScanService,
@@ -52,7 +76,15 @@ import { CompleteScanService } from './complete-scan.service';
     NEWS_ITEM_SOURCE_NELSON_MAIL,
     NEWS_ITEM_SOURCE_SOUTHLAND_TIMES,
     NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS,
-    NEWS_ITEM_SOURCE_TIMARU_HERALD
+    NEWS_ITEM_SOURCE_TIMARU_HERALD,
+    NEWS_ITEM_SOURCE_MANAWATU_STANDARD_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_MARLBOROUGH_EXPRESS_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_NELSON_MAIL_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_SOUTHLAND_TIMES_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_SUNDAY_STAR_TIMES_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION,
+    NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION
   ]
 })
 export class CompleteScanModule {}
