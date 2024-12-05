@@ -22,13 +22,13 @@ COPY . .
 COPY .env ./
 
 RUN yarn prisma:generate
-RUN yarn prisma:generate:mediamine
 
 # Creates a "dist" folder with the production build
 # RUN yarn build
 
-# Expose the port on which the app will run
-# EXPOSE 3002
+# Copy and modify the entrypoint.sh script
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Start the server using the production build
-CMD ["yarn", "start"]
+ENTRYPOINT ["/entrypoint.sh", "yarn", "start"]

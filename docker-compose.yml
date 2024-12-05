@@ -6,21 +6,21 @@ services:
     environment:
       WORKFLOW: WORKFLOW_COMPLETE_SCAN
     volumes:
-      - ./logs/complete-scan/:/var/logs/
-    # restart: always
-    # deploy:
-    #   restart_policy:
-    #     condition: any # Restart on any failure or completion
-    #     delay: 3600s # Set a delay of 1 hour between restarts
+      - ./logs/complete-scan/:/usr/src/app/logs/
+    restart: always
   collection-web-scraper-page-text-scan:
     image: mediamine/collection-web-scraper:latest
     container_name: mediamine-collection-web-scraper-page-text-scan
     environment:
       WORKFLOW: WORKFLOW_PAGE_TEXT_SCAN
     volumes:
-      - ./logs/page-text-scan/:/var/logs/
-    # restart: always
-    # deploy:
-    #   restart_policy:
-    #     condition: any # Restart on any failure or completion
-    #     delay: 1800s # Set a delay of 1 hour between restarts
+      - ./logs/page-text-scan/:/usr/src/app/logs/
+    restart: always
+  collection-web-scraper-rss-scan:
+    image: mediamine/collection-web-scraper:latest
+    container_name: mediamine-collection-web-scraper-rss-scan
+    environment:
+      WORKFLOW: WORKFLOW_RSS_SCAN
+    volumes:
+      - ./logs/rss-scan/:/usr/src/app/logs/
+    restart: always

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppService } from './app.service';
-import { PrismaMediamineService, PrismaService } from './db';
+import { PrismaService } from './db';
 import { WinstonLoggerService } from './logger';
 import { CompleteScanModule, PageTextScanModule, RssScanModule } from './workflow';
 
@@ -17,6 +17,6 @@ import { CompleteScanModule, PageTextScanModule, RssScanModule } from './workflo
     RssScanModule
   ],
   controllers: [],
-  providers: [AppService, WinstonLoggerService, PrismaMediamineService, PrismaService]
+  providers: [AppService, WinstonLoggerService, PrismaService]
 })
 export class AppModule {}

@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "postinstall-temp": "yarn run prisma:generate & yarn run prisma:generate:mediamine",
+    "postinstall-temp": "yarn run prisma:generate",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -22,7 +22,6 @@
     "test:playwright": "yarn --cwd test playwright test",
     "nest:service": "nest g service",
     "prisma:generate": "prisma generate",
-    "prisma:generate:mediamine": "prisma generate --schema ./prisma/schema.mediamine.prisma",
     "start:complete-scan": "yarn start [workflow=WORKFLOW_COMPLETE_SCAN]",
     "start:page-text-scan": "yarn start [workflow=WORKFLOW_PAGE_TEXT_SCAN]"
   },
