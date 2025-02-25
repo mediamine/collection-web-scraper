@@ -94,6 +94,8 @@ export class CompleteScanService {
       await feedScraperService.logout({ page });
 
       await this.playwrightService.closeBrowser();
-    } catch (e) {}
+    } catch (e) {
+      this.logger.error(e.message);
+    }
   }
 }

@@ -17,15 +17,15 @@ export class GroupBService implements ScannerProps {
     url = 'https://www.stuff.co.nz';
 
     // Wait for page to load
-    await page.locator('div.stuff-box.story1.lead a').waitFor();
-    await page.locator('div.stuff-box.story2 a').waitFor();
-    await page.locator('div.stuff-box.secondary a').first().waitFor();
+    await page.locator('div.story-card.story1.lead a').waitFor();
+    await page.locator('div.story-card.story2 a').waitFor();
+    await page.locator('div.story-card.secondary a').first().waitFor();
 
     // Find all articles under each sub-section
     const articles = [
-      await page.locator('div.stuff-box.story1.lead a'),
-      await page.locator('div.stuff-box.story2 a'),
-      ...(await page.locator('div.stuff-box.secondary a').all())
+      await page.locator('div.story-card.story1.lead a'),
+      await page.locator('div.story-card.story2 a'),
+      ...(await page.locator('div.story-card.secondary a').all())
     ];
 
     // Extract & return all links, titles & descriptions for each article
@@ -34,14 +34,14 @@ export class GroupBService implements ScannerProps {
         articles.map(async (article) => ({
           link: `${url}${await article.getAttribute('href')}`,
           title: (await article.locator(page.locator('span.heading-text')).innerText()) as string,
-          description: (await article.locator(page.locator('p.stuff-text-body')).innerText()) as string
+          description: (await article.locator(page.locator('p.common-text-body')).innerText()) as string
         }))
       ))
     ];
   }
 
   async scanHome({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
-    await page.locator('div.stuff-frame-container.stuff-top-stories-section-frame').waitFor();
+    await page.locator('div.frame-container.top-stories-section-frame').waitFor();
 
     try {
       // Create a list of all links
@@ -63,7 +63,7 @@ export class GroupBService implements ScannerProps {
     }
 
     // Article Text
-    const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.stuff-article-content p').allTextContents());
+    const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.content-slot p').allTextContents());
 
     return {
       text: textContents.join('')
