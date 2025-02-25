@@ -92,10 +92,10 @@ export class CompleteScanService {
 
       this.logger.debug('Logging out the browser session.');
       await feedScraperService.logout({ page });
-
-      await this.playwrightService.closeBrowser();
     } catch (e) {
       this.logger.error(e.message);
+    } finally {
+      await this.playwrightService.closeBrowser();
     }
   }
 }
