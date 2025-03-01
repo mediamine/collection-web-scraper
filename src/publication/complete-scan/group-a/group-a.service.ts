@@ -11,14 +11,21 @@ export class GroupAService implements ScannerProps {
   ) {}
 
   async authenticate({ page }: AuthenticateFnProps) {
+    await this.logger.debug('Starting authenticate');
+
     await page.getByRole('button', { name: 'Log In' }).click();
     await page.getByLabel('Email address').fill(this.configService.get('STUFF_LOGIN_USERNAME'));
     await page.getByLabel('Password').fill(this.configService.get('STUFF_LOGIN_PASSWORD'));
-    await page.getByRole('button', { name: 'Log in' }).click();
+    await page
+      .getByRole('button', { name: 'Log In' })
+      .or(page.getByRole('button', { name: 'Log in' }))
+      .click();
     await page.locator('#mastheads_menu').waitFor();
   }
 
   async getLinks({ page, url }: ScanFnProps, section: string): Promise<Array<ArticleLinkProps>> {
+    await this.logger.debug('Starting getLinks');
+
     await page.reload();
 
     // Navigate to the section page
@@ -54,6 +61,8 @@ export class GroupAService implements ScannerProps {
   }
 
   async scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
+    await this.logger.debug('Starting scanArticle');
+
     await page.goto(url, { timeout: 60000 });
     await page.locator('section.page-content').waitFor();
 
@@ -69,6 +78,8 @@ export class GroupAService implements ScannerProps {
   }
 
   async logout({ page }: AuthenticateFnProps) {
+    await this.logger.debug('Starting logout');
+
     await page.getByRole('button', { name: 'M', exact: true }).waitFor();
     await page.getByRole('button', { name: 'M', exact: true }).click();
     await page.getByRole('button', { name: 'Log Out' }).click();

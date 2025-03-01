@@ -36,7 +36,10 @@ async function authenticate({ page }: AuthenticateFnProps) {
   await page.getByRole('button', { name: 'Log In' }).click();
   await page.getByLabel('Email address').fill(process.env['STUFF_LOGIN_USERNAME']);
   await page.getByLabel('Password').fill(process.env['STUFF_LOGIN_PASSWORD']);
-  await page.getByRole('button', { name: 'Log in' }).click();
+  await page
+    .getByRole('button', { name: 'Log In' })
+    .or(page.getByRole('button', { name: 'Log in' }))
+    .click();
   await page.locator('#mastheads_menu').waitFor();
 }
 
