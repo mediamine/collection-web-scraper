@@ -80,6 +80,8 @@ export class GroupAService implements ScannerProps {
   async logout({ page }: AuthenticateFnProps) {
     await this.logger.debug('Starting logout');
 
+    await page.reload();
+
     await page.getByRole('button', { name: 'M', exact: true }).waitFor();
     await page.getByRole('button', { name: 'M', exact: true }).click();
     await page.getByRole('button', { name: 'Log Out' }).click();

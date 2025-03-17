@@ -3,7 +3,6 @@ import { ModuleRef } from '@nestjs/core';
 import hashIt from 'hash-it';
 import { uniqBy } from 'lodash';
 import { DateTime } from 'luxon';
-import { PlaywrightService } from 'src/browser';
 import { PrismaService } from 'src/db';
 import { WinstonLoggerService } from 'src/logger';
 import { ScannerProps } from 'src/publication/types';
@@ -13,8 +12,7 @@ export class RssScanService {
   constructor(
     private readonly moduleRef: ModuleRef,
     private logger: WinstonLoggerService,
-    private prismaService: PrismaService,
-    private playwrightService: PlaywrightService
+    private prismaService: PrismaService
   ) {
     this.logger.setContext(RssScanService.name);
   }
@@ -23,14 +21,10 @@ export class RssScanService {
     try {
       this.logger.log(`Invoked ${this.scan.name} with ${JSON.stringify({ id, name, url })} of type: ${feedScraper}`);
 
-      this.logger.log(`Navigating to ${url}`);
-      const { page } = await this.playwrightService.openBrowser({ url });
-
       const feedScraperService = this.moduleRef.get<ScannerProps>(feedScraper, { strict: false });
-      feedScraperService.authenticate({ page });
 
       this.logger.debug('Scraping home pages for links.');
-      const $newsItems = uniqBy(await feedScraperService.scanHome({ page, url }), 'link');
+      const $newsItems = uniqBy(await feedScraperService.scanHome({ url }), 'link');
 
       this.logger.debug('Find highest newsItem id in db.');
       const newsItemMaxId = await this.prismaService.news_item.findFirstOrThrow({ orderBy: { id: 'desc' } });
@@ -88,13 +82,8 @@ export class RssScanService {
         where: { id },
         data: { last_download_date: new Date() }
       });
-
-      this.logger.debug('Logging out the browser session.');
-      await feedScraperService.logout({ page });
     } catch (e) {
-      throw new Error(e);
-    } finally {
-      await this.playwrightService.closeBrowser();
+      this.logger.error(e.message);
     }
   }
 }

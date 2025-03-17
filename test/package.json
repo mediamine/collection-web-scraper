@@ -8,7 +8,7 @@
     "@types/node": "^22.7.5"
   },
   "scripts": {
-    "test": "playwright test"
+    "test:playwright": "playwright test"
   },
   "dependencies": {
     "playwright-msteams-reporter": "^0.0.12",
