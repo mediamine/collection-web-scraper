@@ -13,7 +13,8 @@ import { ArticleLinkProps, ScanFnProps } from '../tests-new/types';
   { name: 'Newstalk ZB - Education', url: 'https://www.newstalkzb.co.nz/news/education/rssfeed' },
   { name: 'Newstalk ZB - Emergency', url: 'https://www.newstalkzb.co.nz/news/emergency/rssfeed' },
   { name: 'Newstalk ZB - Business', url: 'https://www.newstalkzb.co.nz/news/business/rssfeed' },
-  { name: 'Newstalk ZB - Entertainment', url: 'https://www.newstalkzb.co.nz/news/entertainment/rssfeed' }
+  { name: 'Newstalk ZB - Entertainment', url: 'https://www.newstalkzb.co.nz/news/entertainment/rssfeed' },
+  { name: 'Beehive', url: 'https://www.beehive.govt.nz/rss.xml' }
 ].forEach(({ name, url }) => {
   test(`testing ${name} at ${url}`, async ({ page }) => {
     const articles = await getLinks({ page, url });

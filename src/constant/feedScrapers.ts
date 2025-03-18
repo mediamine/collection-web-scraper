@@ -21,6 +21,7 @@ export const NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION = 'Timaru Herald (Subsc
 export const NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION = 'Wairarapa Times-Age (Subscription)';
 
 export const NEWS_ITEM_SOURCE_NEWSTALK_ZB = 'Newstalk ZB';
+export const NEWS_ITEM_SOURCE_BEEHIVE = 'Beehive';
 
 export const NEWS_ITEM_SOURCE_STUFF = 'Stuff';
 export const NEWS_ITEM_SOURCE_NATIONAL_BUSINESS_REVIEW = 'National Business Review';

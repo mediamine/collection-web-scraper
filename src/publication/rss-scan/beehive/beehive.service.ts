@@ -4,12 +4,12 @@ import { WinstonLoggerService } from 'src/logger';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps, ScannerProps } from '../../types';
 
 @Injectable()
-export class NewstalkZBService implements ScannerProps {
+export class BeehiveService implements ScannerProps {
   constructor(
     private logger: WinstonLoggerService,
     private parser: RssParserService
   ) {
-    this.logger.setContext(NewstalkZBService.name);
+    this.logger.setContext(BeehiveService.name);
   }
 
   async authenticate({}: AuthenticateFnProps) {}
