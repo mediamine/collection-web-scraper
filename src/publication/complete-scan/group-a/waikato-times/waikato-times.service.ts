@@ -21,7 +21,7 @@ export class WaikatoTimesService extends GroupAService implements ScannerProps {
       // Create a list of all links
       const newsItems: Array<ArticleLinkProps> = ([] as Array<ArticleLinkProps>).concat(
         await this.getLinks({ page, url }, 'News'),
-        await this.getLinks({ page, url }, 'Life'),
+        // await this.getLinks({ page, url }, 'Life'),
         await this.getLinks({ page, url }, 'Politics'),
         await this.getLinks({ page, url }, 'Business'),
         await this.getLinks({ page, url }, 'History'),

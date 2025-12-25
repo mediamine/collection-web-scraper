@@ -28,7 +28,7 @@ export class CompleteScanService {
       const { page } = await this.playwrightService.openBrowser({ url });
 
       const feedScraperService = this.moduleRef.get<ScannerProps>(feedScraper, { strict: false });
-      feedScraperService.authenticate({ page });
+      await feedScraperService.authenticate({ page });
 
       this.logger.debug('Scraping home pages for links.');
       const $newsItems = uniqBy(await feedScraperService.scanHome({ page, url }), 'link');

@@ -22,7 +22,7 @@ export class ThePressService extends GroupAService {
       const newsItems: Array<ArticleLinkProps> = ([] as Array<ArticleLinkProps>).concat(
         await this.getLinks({ page, url }, 'NZ news'),
         await this.getLinks({ page, url }, 'Opinion'),
-        await this.getLinks({ page, url }, 'Life'),
+        // await this.getLinks({ page, url }, 'Life'),
         await this.getLinks({ page, url }, 'South Island'),
         await this.getLinks({ page, url }, 'Business'),
         await this.getLinks({ page, url }, 'Sport'),

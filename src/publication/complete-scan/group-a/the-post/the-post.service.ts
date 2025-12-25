@@ -23,10 +23,11 @@ export class ThePostService extends GroupAService {
         await this.getLinks({ page, url }, 'Politics'),
         await this.getLinks({ page, url }, 'Business Report'),
         await this.getLinks({ page, url }, 'National news'),
-        await this.getLinks({ page, url }, 'Culture'),
+        // await this.getLinks({ page, url }, 'Culture'),
         await this.getLinks({ page, url }, 'Opinion'),
         await this.getLinks({ page, url }, 'Sport'),
         await this.getLinks({ page, url }, 'World news')
+        // await this.getLinks({ page, url }, 'Auckland'),
 
         // TODO: Decide on the following sections
         // await getLinks('Your Weekend')

@@ -5,7 +5,8 @@
 INPUT_NO_OF_ITERATIONS=$1
 NO_OF_ITERATIONS=${INPUT_NO_OF_ITERATIONS:-10}
 
-for i in {1..10}
+# for i in {1..10}
+while true
     do
         echo "start iteration: $i";
         WORKFLOW=WORKFLOW_COMPLETE_SCAN yarn start;

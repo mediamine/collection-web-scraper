@@ -21,12 +21,12 @@ export class GroupAService implements ScannerProps {
       .or(page.getByRole('button', { name: 'Log in' }))
       .click();
     await page.locator('#mastheads_menu').waitFor();
+
+    await page.reload();
   }
 
   async getLinks({ page, url }: ScanFnProps, section: string): Promise<Array<ArticleLinkProps>> {
     await this.logger.debug('Starting getLinks');
-
-    await page.reload();
 
     // Navigate to the section page
     await page.locator('#mastheads_menu').waitFor();
