@@ -63,7 +63,7 @@ export class GroupBService implements ScannerProps {
     }
 
     // Article Text
-    const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.content-slot p').allTextContents());
+    const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.content-groups p').allTextContents());
 
     return {
       text: textContents.join('')

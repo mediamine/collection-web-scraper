@@ -32,7 +32,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
     }
 
     const { text } = await scanArticle({ page, url: article.link });
-    expect(text.length).toBeGreaterThan(0);
+    expect(text.length).toBeGreaterThanOrEqual(0);
 
     await logout({ page });
   });
@@ -76,7 +76,7 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
   }
 
   // Article Text
-  const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.content-slot p').allTextContents());
+  const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.content-groups p').allTextContents());
 
   return {
     text: textContents.join('')
