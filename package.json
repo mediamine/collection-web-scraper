@@ -2,7 +2,8 @@
   "name": "collection-web-scraper",
   "version": "0.0.1",
   "description": "",
-  "author": "",
+  "repository": "https://github.com/mediamine/collection-web-scraper.git",
+  "author": "MohsinKhan-MediaMine <mohsin@mediamine.co.nz>",
   "private": true,
   "license": "MIT",
   "scripts": {
