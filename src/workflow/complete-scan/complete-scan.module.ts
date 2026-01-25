@@ -17,6 +17,7 @@ import {
   NEWS_ITEM_SOURCE_TIMARU_HERALD,
   NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION,
   NEWS_ITEM_SOURCE_WAIKATO_TIMES,
+  NEWS_ITEM_SOURCE_WAIKATO_TIMES_2,
   NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION
 } from 'src/constant/feedScrapers';
 import { PrismaService } from 'src/db';
@@ -37,6 +38,7 @@ import {
   ThePressService,
   TimaruHeraldService,
   TimaruHeraldSubscriptionService,
+  WaikatoTimes2Service,
   WaikatoTimesService,
   WairarapaTimesAgeSubscriptionService
 } from 'src/publication/complete-scan';
@@ -64,7 +66,8 @@ import { CompleteScanService } from './complete-scan.service';
     { provide: NEWS_ITEM_SOURCE_SUNDAY_STAR_TIMES_SUBSCRIPTION, useClass: SundayStarTimesSubscriptionService },
     { provide: NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS_SUBSCRIPTION, useClass: TaranakiDailyNewsSubscriptionService },
     { provide: NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION, useClass: TimaruHeraldSubscriptionService },
-    { provide: NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION, useClass: WairarapaTimesAgeSubscriptionService }
+    { provide: NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION, useClass: WairarapaTimesAgeSubscriptionService },
+    { provide: NEWS_ITEM_SOURCE_WAIKATO_TIMES_2, useClass: WaikatoTimes2Service }
   ],
   exports: [
     CompleteScanService,

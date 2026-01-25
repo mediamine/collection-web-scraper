@@ -17,3 +17,5 @@ export { SundayStarTimesSubscriptionService } from './group-c/sunday-star-times/
 export { TaranakiDailyNewsSubscriptionService } from './group-c/taranaki-daily-news/taranaki-daily-news.service';
 export { TimaruHeraldSubscriptionService } from './group-c/timaru-herald/timaru-herald.service';
 export { WairarapaTimesAgeSubscriptionService } from './group-c/wairarapa-times-age/wairarapa-times-age.service';
+
+export { WaikatoTimes2Service } from './group-d/waikato-times/waikato-times.service';

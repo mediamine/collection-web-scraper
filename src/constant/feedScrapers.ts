@@ -26,3 +26,5 @@ export const NEWS_ITEM_SOURCE_BEEHIVE = 'Beehive';
 export const NEWS_ITEM_SOURCE_STUFF = 'Stuff';
 export const NEWS_ITEM_SOURCE_NATIONAL_BUSINESS_REVIEW = 'National Business Review';
 export const NEWS_ITEM_SOURCE_BUSINESS_DESK = 'Business Desk';
+
+export const NEWS_ITEM_SOURCE_WAIKATO_TIMES_2 = 'Waikato Times 2';
