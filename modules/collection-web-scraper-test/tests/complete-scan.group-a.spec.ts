@@ -6,7 +6,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   { name: 'The Press', url: 'https://www.thepress.co.nz', section: 'NZ news' },
   { name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'News' }
 ].forEach(({ name, url, section }) => {
-  test(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
+  test.skip(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
     await page.goto(url);
 
     await authenticate({ page });

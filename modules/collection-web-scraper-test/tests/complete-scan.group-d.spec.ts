@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from './types';
 
-[{ name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'NZ news' }].forEach(({ name, url, section }) => {
+[
+  { name: 'The Post', url: 'https://www.thepost.co.nz', section: 'Politics' },
+  { name: 'The Press', url: 'https://www.thepress.co.nz', section: 'NZ news' },
+  { name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'NZ news' }
+].forEach(({ name, url, section }) => {
   test(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
     await page.goto(url);
 
@@ -43,8 +47,8 @@ async function getLinks({ page, url }: ScanFnProps, section: string): Promise<Ar
   await page.getByRole('button', { name: 'Toggle navigation menu' }).waitFor();
   await page.getByRole('button', { name: 'Toggle navigation menu' }).click();
 
-  await page.getByRole('link', { name: section, exact: true }).waitFor();
-  await page.getByRole('link', { name: section, exact: true }).click();
+  await page.getByRole('link', { name: section, exact: true }).first().waitFor();
+  await page.getByRole('link', { name: section, exact: true }).first().click();
 
   // Wait for page to load
   await page.locator('div.story-list-medium-container').first().waitFor();

@@ -18,4 +18,6 @@ export { TaranakiDailyNewsSubscriptionService } from './group-c/taranaki-daily-n
 export { TimaruHeraldSubscriptionService } from './group-c/timaru-herald/timaru-herald.service';
 export { WairarapaTimesAgeSubscriptionService } from './group-c/wairarapa-times-age/wairarapa-times-age.service';
 
+export { ThePost2Service } from './group-d/the-post/the-post.service';
+export { ThePress2Service } from './group-d/the-press/the-press.service';
 export { WaikatoTimes2Service } from './group-d/waikato-times/waikato-times.service';
