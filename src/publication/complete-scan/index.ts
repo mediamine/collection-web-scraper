@@ -21,3 +21,5 @@ export { WairarapaTimesAgeSubscriptionService } from './group-c/wairarapa-times-
 export { ThePost2Service } from './group-d/the-post/the-post.service';
 export { ThePress2Service } from './group-d/the-press/the-press.service';
 export { WaikatoTimes2Service } from './group-d/waikato-times/waikato-times.service';
+
+export { WaikatoTimes3Service } from './group-e/waikato-times/waikato-times.service';

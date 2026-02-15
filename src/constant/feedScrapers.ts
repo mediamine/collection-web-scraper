@@ -30,3 +30,5 @@ export const NEWS_ITEM_SOURCE_BUSINESS_DESK = 'Business Desk';
 export const NEWS_ITEM_SOURCE_THE_POST_2 = 'The Post 2';
 export const NEWS_ITEM_SOURCE_THE_PRESS_2 = 'The Press 2';
 export const NEWS_ITEM_SOURCE_WAIKATO_TIMES_2 = 'Waikato Times 2';
+
+export const NEWS_ITEM_SOURCE_WAIKATO_TIMES_3 = 'Waikato Times 3';
