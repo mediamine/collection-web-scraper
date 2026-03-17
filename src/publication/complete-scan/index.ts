@@ -22,4 +22,15 @@ export { ThePost2Service } from './group-d/the-post/the-post.service';
 export { ThePress2Service } from './group-d/the-press/the-press.service';
 export { WaikatoTimes2Service } from './group-d/waikato-times/waikato-times.service';
 
+export { ThePost3Service } from './group-e/the-post/the-post.service';
+export { ThePress3Service } from './group-e/the-press/the-press.service';
 export { WaikatoTimes3Service } from './group-e/waikato-times/waikato-times.service';
+
+export { ManawatuStandardSubscription2Service } from './group-f/manawatu-standard/manawatu-standard.service';
+export { MarlboroughExpressSubscription2Service } from './group-f/marlborough-express/marlborough-express.service';
+export { NelsonMailSubscription2Service } from './group-f/nelson-mail/nelson-mail.service';
+export { SouthlandTimesSubscription2Service } from './group-f/southland-times/southland-times.service';
+export { SundayStarTimesSubscription2Service } from './group-f/sunday-star-times/sunday-star-times.service';
+export { TaranakiDailyNewsSubscription2Service } from './group-f/taranaki-daily-news/taranaki-daily-news.service';
+export { TimaruHeraldSubscription2Service } from './group-f/timaru-herald/timaru-herald.service';
+export { WairarapaTimesAgeSubscription2Service } from './group-f/wairarapa-times-age/wairarapa-times-age.service';

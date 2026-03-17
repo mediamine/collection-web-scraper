@@ -31,4 +31,15 @@ export const NEWS_ITEM_SOURCE_THE_POST_2 = 'The Post 2';
 export const NEWS_ITEM_SOURCE_THE_PRESS_2 = 'The Press 2';
 export const NEWS_ITEM_SOURCE_WAIKATO_TIMES_2 = 'Waikato Times 2';
 
+export const NEWS_ITEM_SOURCE_THE_POST_3 = 'The Post 3';
+export const NEWS_ITEM_SOURCE_THE_PRESS_3 = 'The Press 3';
 export const NEWS_ITEM_SOURCE_WAIKATO_TIMES_3 = 'Waikato Times 3';
+
+export const NEWS_ITEM_SOURCE_MANAWATU_STANDARD_SUBSCRIPTION_2 = 'Manawatu Standard (Subscription) 2';
+export const NEWS_ITEM_SOURCE_MARLBOROUGH_EXPRESS_SUBSCRIPTION_2 = 'Marlborough Express (Subscription) 2';
+export const NEWS_ITEM_SOURCE_NELSON_MAIL_SUBSCRIPTION_2 = 'Nelson Mail (Subscription) 2';
+export const NEWS_ITEM_SOURCE_SOUTHLAND_TIMES_SUBSCRIPTION_2 = 'Southland Times (Subscription) 2';
+export const NEWS_ITEM_SOURCE_SUNDAY_STAR_TIMES_SUBSCRIPTION_2 = 'Sunday Star Times (Subscription) 2';
+export const NEWS_ITEM_SOURCE_TARANAKI_DAILY_NEWS_SUBSCRIPTION_2 = 'Taranaki Daily News (Subscription) 2';
+export const NEWS_ITEM_SOURCE_TIMARU_HERALD_SUBSCRIPTION_2 = 'Timaru Herald (Subscription) 2';
+export const NEWS_ITEM_SOURCE_WAIRARAPA_TIMES_AGE_SUBSCRIPTION_2 = 'Wairarapa Times-Age (Subscription) 2';
