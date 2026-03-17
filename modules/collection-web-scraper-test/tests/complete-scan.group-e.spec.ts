@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from './types';
 
-[{ name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'NZ news' }].forEach(({ name, url, section }) => {
+[
+  { name: 'The Post', url: 'https://www.thepost.co.nz', section: 'Politics' },
+  { name: 'The Press', url: 'https://www.thepress.co.nz', section: 'NZ news' },
+  { name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'NZ news' }
+].forEach(({ name, url, section }) => {
   test(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
     await page.goto(url);
 
@@ -22,7 +26,6 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
       article = articles[Math.floor(Math.random() * articles.length)];
     }
     const { text } = await scanArticle({ page, url: article.link });
-    console.log(text);
     expect(text.length).toBeGreaterThan(0);
 
     await logout({ page });

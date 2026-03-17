@@ -11,7 +11,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   { name: 'Wairarapa Times-Age (Subscription)', url: 'https://www.thepost.co.nz/wairarapa' },
   { name: 'Sunday Star Times (Subscription)', url: 'https://www.thepost.co.nz/sunday-star-times' }
 ].forEach(({ name, url }) => {
-  test.skip(`testing ${name} at ${url}`, async ({ page }) => {
+  test(`testing ${name} at ${url}`, async ({ page }) => {
     await page.goto(url);
 
     await authenticate({ page });
@@ -44,21 +44,17 @@ async function authenticate({}: AuthenticateFnProps) {}
 
 async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
   // Wait for page to load
-  await page.locator('div.story-list-medium-container').first().waitFor();
-  await page.locator('div.list-stories-frame > div.stories-block').waitFor();
+  await page.locator('div[data-testid="box-container"]').first().waitFor();
 
   // Find all articles under each sub-section
-  const articles = [
-    ...(await page.locator('div.story-list-medium-container ion-card').all()),
-    ...(await page.locator('div.list-stories-frame > div.stories-block ion-card').all())
-  ];
+  const articles = [...(await page.locator('div[data-testid="box-container"] article').all())];
 
   // Extract & return all links, titles & descriptions for each article
   return await Promise.all(
     articles.map(async (article) => ({
       link: `${url}${await article.locator(page.locator('a').first()).getAttribute('href')}`,
-      title: (await article.locator(page.locator('ion-card-title')).innerText()) as string,
-      description: (await article.locator(page.locator('ion-card-content > .sf-desc')).innerText()) as string
+      title: (await article.locator(page.locator('h3')).innerText()) as string,
+      description: ''
     }))
   );
 }
