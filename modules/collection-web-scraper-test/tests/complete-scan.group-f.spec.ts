@@ -20,6 +20,8 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
 
     const articles = await getLinks({ page, url });
 
+    expect(articles.map((a) => a.link).every((link) => !link.includes('/topics/'))).toBeTruthy();
+
     // Pick a random article from the list returned
     let article = articles[Math.floor(Math.random() * articles.length)];
     // & keep picking again until it has a valid link url
@@ -52,7 +54,7 @@ async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkPr
   // Extract & return all links, titles & descriptions for each article
   return await Promise.all(
     articles.map(async (article) => ({
-      link: `${url}${await article.locator(page.locator('a').first()).getAttribute('href')}`,
+      link: `${url}${await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href')}`,
       title: (await article.locator(page.locator('h3')).innerText()) as string,
       description: ''
     }))

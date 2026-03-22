@@ -25,7 +25,7 @@ export class GroupFService implements ScannerProps {
     // TODO: Skip the pages having /cartoon in the urls
     return await Promise.all(
       articles.map(async (article) => ({
-        link: `${url}${await article.locator(page.locator('a').first()).getAttribute('href')}`,
+        link: `${url}${await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href')}`,
         title: (await article.locator(page.locator('h3')).innerText()) as string,
         description: ''
       }))
