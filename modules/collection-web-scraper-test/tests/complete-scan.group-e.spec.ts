@@ -63,7 +63,7 @@ async function getLinks({ page, url }: ScanFnProps, section: string): Promise<Ar
     articles.map(async (article) => ({
       link: `${url}${await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href')}`,
       title: (await article.locator(page.locator('h3')).innerText()) as string,
-      description: ''
+      description: (await article.locator(page.locator('h3')).innerText()) as string,
     }))
   );
 }

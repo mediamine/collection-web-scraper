@@ -14,7 +14,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
 
     await authenticate({ page });
 
-    await page.locator('div.frame-container.top-stories-section-frame').waitFor();
+    await page.locator('section.page-content').waitFor();
 
     const articles = await getLinks({ page, url });
 
@@ -38,21 +38,23 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   });
 });
 
-async function authenticate({}: AuthenticateFnProps) {}
+async function authenticate({ }: AuthenticateFnProps) { }
 
 async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
   url = 'https://www.stuff.co.nz';
 
   // Wait for page to load
-  await page.locator('div.story-card.story1.lead a').waitFor();
-  await page.locator('div.story-card.story2 a').waitFor();
-  await page.locator('div.story-card.secondary a').first().waitFor();
+  // await page.locator('div.story-card.story1.lead a').waitFor();
+  // await page.locator('div.story-card.story2 a').waitFor();
+  // await page.locator('div.story-card.secondary a').first().waitFor();
+  await page.locator('div[data-testid="grid-row"] [data-testid="grid-card-content"]>a').first().waitFor();
 
   // Find all articles under each sub-section
   const articles = [
-    await page.locator('div.story-card.story1.lead a'),
-    await page.locator('div.story-card.story2 a'),
-    ...(await page.locator('div.story-card.secondary a').all())
+    // await page.locator('div.story-card.story1.lead a'),
+    // await page.locator('div.story-card.story2 a'),
+    // ...(await page.locator('div.story-card.secondary a').all())
+    ...(await page.locator('div[data-testid="grid-row"] [data-testid="grid-card-content"]>a').all())
   ];
 
   // Extract & return all links, titles & descriptions for each article
@@ -60,8 +62,8 @@ async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkPr
     ...(await Promise.all(
       articles.map(async (article) => ({
         link: `${url}${await article.getAttribute('href')}`,
-        title: (await article.locator(page.locator('span.heading-text')).innerText()) as string,
-        description: (await article.locator(page.locator('p.common-text-body')).innerText()) as string
+        title: (await article.locator(page.locator('h3')).innerText()) as string,
+        description: (await article.locator(page.locator('h3')).innerText()) as string,
       }))
     ))
   ];
@@ -83,4 +85,4 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
   };
 }
 
-async function logout({}: AuthenticateFnProps) {}
+async function logout({ }: AuthenticateFnProps) { }

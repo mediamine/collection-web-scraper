@@ -21,27 +21,27 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.TESTS_WEBHOOK_URL
     ? [
-        ['html'],
-        [
-          'playwright-msteams-reporter',
-          <MsTeamsReporterOptions>{
-            webhookUrl: process.env.TESTS_WEBHOOK_URL,
-            webhookType: 'powerautomate',
-            title: 'Playwright Test Results for Web Scraper collection jobs',
-            mentionOnFailure: process.env.TESTS_MENTION_ON_FAILURE,
-            mentionOnFailureText: 'Hi {mentions}, please verify tests failing for one or more scrapers.',
-            enableEmoji: true
-          }
-        ]
+      ['html'],
+      [
+        'playwright-msteams-reporter',
+        <MsTeamsReporterOptions>{
+          webhookUrl: process.env.TESTS_WEBHOOK_URL,
+          webhookType: 'powerautomate',
+          title: 'Playwright Test Results for Web Scraper collection jobs',
+          mentionOnFailure: process.env.TESTS_MENTION_ON_FAILURE,
+          mentionOnFailureText: 'Hi {mentions}, please verify tests failing for one or more scrapers.',
+          enableEmoji: true
+        }
       ]
+    ]
     : [['html']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     // baseURL: 'http://127.0.0.1:3000',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry'
+    /* Record a trace for every run and keep it whenever a test fails. See https://playwright.dev/docs/trace-viewer */
+    trace: 'retain-on-failure'
   },
   /* Configure projects for major browsers */
   projects: [
