@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppService } from './app.service';
-import { PrismaService } from './db';
+import { PrismaModule } from './db';
 import { WinstonLoggerService } from './logger';
 import { CompleteScanModule, PageTextScanModule, RssScanModule } from './workflow';
 
@@ -12,11 +12,12 @@ import { CompleteScanModule, PageTextScanModule, RssScanModule } from './workflo
       cache: true,
       envFilePath: ['.env', '.env.dev', '.env.prod']
     }),
+    PrismaModule,
     CompleteScanModule,
     PageTextScanModule,
     RssScanModule
   ],
   controllers: [],
-  providers: [AppService, WinstonLoggerService, PrismaService]
+  providers: [AppService, WinstonLoggerService]
 })
 export class AppModule {}
