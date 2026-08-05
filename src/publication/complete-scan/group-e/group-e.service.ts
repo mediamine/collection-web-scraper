@@ -8,7 +8,7 @@ export class GroupEService implements ScannerProps {
   constructor(
     protected configService: ConfigService,
     protected logger: WinstonLoggerService
-  ) {}
+  ) { }
 
   async authenticate({ page }: AuthenticateFnProps) {
     await this.logger.debug('Starting authenticate');
@@ -41,15 +41,29 @@ export class GroupEService implements ScannerProps {
     // Extract & return all links, titles & descriptions for each article
     // TODO: Skip the pages having /cartoon in the urls
     return await Promise.all(
-      articles.map(async (article) => ({
-        link: `${url}${await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href')}`,
-        title: (await article.locator(page.locator('h3')).innerText()) as string,
-        description: ''
-      }))
+      articles.map(async (article) => {
+        let link = '';
+        try {
+          link = await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href');
+        } catch (e) {
+          await this.logger.error('Unable to resolve article link');
+        }
+        let title = '';
+        try {
+          title = await article.locator(page.locator('h3')).innerText();
+        } catch (e) {
+          await this.logger.error('Unable to resolve article title');
+        }
+        return ({
+          link: `${url}${link}`,
+          title,
+          description: ''
+        })
+      })
     );
   }
 
-  async scanHome({}: ScanFnProps): Promise<Array<ArticleLinkProps>> {
+  async scanHome({ }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
     return [];
   }
 
@@ -62,7 +76,8 @@ export class GroupEService implements ScannerProps {
     // Article Text
     const textContents: Array<string> = ([] as Array<string>).concat(
       await page.locator('div.text-block > p').allTextContents(),
-      await page.locator('div.text-block > div.paywall > p').allTextContents()
+      await page.locator('div.text-block > div.paywall > p').allTextContents(),
+      await page.locator('div[data-testid="body-paragraph"] > p').allTextContents(),
     );
 
     return {
