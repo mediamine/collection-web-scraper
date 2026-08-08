@@ -10,10 +10,10 @@ while true
     do
         echo "start iteration: $i";
         WORKFLOW=WORKFLOW_COMPLETE_SCAN yarn start;
-        sleep 3600;
+        sleep 7200;
         WORKFLOW=WORKFLOW_PAGE_TEXT_SCAN yarn start;
-        sleep 3600;
+        sleep 7200;
         WORKFLOW=WORKFLOW_RSS_SCAN yarn start;
-        sleep 3600;
+        sleep 7200;
         echo "end iteration: $i";
     done
