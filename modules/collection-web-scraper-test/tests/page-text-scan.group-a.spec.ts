@@ -9,22 +9,36 @@ const MIN_PAGE_TEXT_CHAR_COUNT = 500;
 type TeaserLinkProps = ArticleLinkProps & { premium: boolean };
 
 [{ name: 'Otago Daily Times', url: 'https://www.odt.co.nz', section: '/news/dunedin' }].forEach(({ name, url, section }) => {
-  test(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+  // This is the path the page-text-scan-v2 workflow itself takes: it opens a news_item link directly,
+  // never the home page, so authenticating has to work from the subscription dialog.
+  test(`testing ${name} at ${url} signing in from the subscription dialog`, async ({ page }) => {
+    const article = await pickPremiumArticle({ page, url: `${url}${section}` });
+
+    await page.goto(article.link, { waitUntil: 'domcontentloaded' });
+
+    // Opening a premium article directly pops Piano's subscription offer. Assert it really showed, so
+    // this test can't silently degrade into the header sign in path that the next test covers.
+    await page.locator('iframe[id^="offer-"]').waitFor();
+    expect(await page.locator('iframe[id^="offer-"]').count()).toBeGreaterThan(0);
 
     await authenticate({ page });
 
-    const articles = await getLinks({ page, url: `${url}${section}` });
-    expect(articles.length).toBeGreaterThan(0);
+    const { text } = await scanArticle({ page, url: article.link });
+    console.log(`Scraped ${text.length} chars of page text.`);
+    expect(text.length).toBeGreaterThan(MIN_PAGE_TEXT_CHAR_COUNT);
 
-    // Only the premium articles exercise the paywall, which is the point of this suite
-    const premiumArticles = articles.filter((a) => a.premium);
-    console.log(`Found ${articles.length} articles on ${section}, ${premiumArticles.length} of them premium.`);
-    expect(premiumArticles.length).toBeGreaterThan(0);
+    await logout({ page });
+  });
 
-    // Pick a random premium article from the list returned
-    const article = premiumArticles[Math.floor(Math.random() * premiumArticles.length)];
-    console.log(`Scanning premium article: ${article.link}`);
+  // The fallback path: no subscription dialog is shown, so the header control is the way in. Happens
+  // whenever the first link the workflow opens is a free article.
+  test(`testing ${name} at ${url} signing in from the header`, async ({ page }) => {
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    expect(await page.locator('iframe[id^="offer-"]').count()).toBe(0);
+
+    await authenticate({ page });
+
+    const article = await pickPremiumArticle({ page, url: `${url}${section}` });
 
     const { text } = await scanArticle({ page, url: article.link });
     console.log(`Scraped ${text.length} chars of page text.`);
@@ -34,20 +48,56 @@ type TeaserLinkProps = ArticleLinkProps & { premium: boolean };
   });
 });
 
-async function authenticate({ page }: AuthenticateFnProps) {
-  await page.locator('div.sign-in-button button').first().waitFor();
-  await page.locator('div.sign-in-button button').first().click();
+async function pickPremiumArticle({ page, url }: ScanFnProps): Promise<TeaserLinkProps> {
+  const articles = await getLinks({ page, url });
+  expect(articles.length).toBeGreaterThan(0);
 
-  // The Piano ID login form is served from id-au.piano.io inside an iframe in the .tp-modal overlay.
-  // Note the password input has no name attribute, so it has to be matched on type.
-  await page.locator('.tp-modal iframe').first().waitFor();
-  const piano = page.frameLocator('.tp-modal iframe').first();
+  // Only the premium articles exercise the paywall, which is the point of this suite
+  const premiumArticles = articles.filter((a) => a.premium);
+  console.log(`Found ${articles.length} articles on ${url}, ${premiumArticles.length} of them premium.`);
+  expect(premiumArticles.length).toBeGreaterThan(0);
+
+  // Pick a random premium article from the list returned
+  const article = premiumArticles[Math.floor(Math.random() * premiumArticles.length)];
+  console.log(`Picked premium article: ${article.link}`);
+
+  return article;
+}
+
+async function authenticate({ page }: AuthenticateFnProps) {
+  // The header control renders on every page, signed in or out — only its label changes — so it is the
+  // cheapest thing to wait on before reading auth state.
+  await page.locator('div.sign-in-button button').first().waitFor();
+
+  if ((await page.getByRole('button', { name: /sign out/i }).count()) > 0) {
+    console.log('Already signed in.');
+    return;
+  }
+
+  // Piano injects its subscription offer asynchronously, so give it a chance to show up before
+  // deciding which way in to use. On a premium article it appears; elsewhere it never does.
+  const offerDialog = page.locator('iframe[id^="offer-"]');
+  await offerDialog.waitFor({ timeout: 15000 }).catch(() => {});
+
+  if ((await offerDialog.count()) > 0) {
+    // "Already a subscriber? Sign in" inside the offer dialog swaps it for the login form
+    console.log('Signing in via the subscription dialog.');
+    await page.frameLocator('iframe[id^="offer-"]').locator('a.sign-in-bold').click();
+  } else {
+    console.log('Signing in via the header.');
+    await page.locator('div.sign-in-button button').first().click();
+  }
+
+  // Either way the Piano ID login form lands in its own iframe, id-prefixed piano-id. Match on that
+  // rather than on .tp-modal iframe, which also matches the offer dialog, or on the src, which
+  // contains the id host on both iframes.
+  const piano = page.frameLocator('iframe[id^="piano-id"]');
   await piano.locator('input[name="email"]').fill(process.env['ODT_LOGIN_USERNAME']);
+  // Note the password input carries no name attribute, so it has to be matched on type
   await piano.locator('input[type="password"]').fill(process.env['ODT_LOGIN_PASSWORD']);
   await piano.locator('button.btn', { hasText: /sign in/i }).first().click();
 
-  // The header swaps SIGN IN for SIGN OUT once authenticated. Note div.sign-in-button stays in the
-  // DOM either way, so its presence is not a usable signal.
+  // The header swaps SIGN IN for SIGN OUT once authenticated
   await page.getByRole('button', { name: /sign out/i }).first().waitFor();
 }
 

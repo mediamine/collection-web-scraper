@@ -91,7 +91,7 @@ Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first foun
 - `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT` — re-scrape threshold in characters for page-text-scan-v2 only; unset or `0` disables it and the workflow logs a warning. For ODT, full articles run ~2300-4400 chars and teaser/RSS descriptions ~100-160, so the threshold belongs in the gap.
 - `DATABASE_URL` — Postgres connection.
 - `STUFF_LOGIN_USERNAME` / `STUFF_LOGIN_PASSWORD` — credentials for Stuff-network logins (group-a `authenticate`).
-- `ODT_LOGIN_USERNAME` / `ODT_LOGIN_PASSWORD` — Otago Daily Times subscriber credentials, used against the Piano ID login (`id-au.piano.io`) in `OtagoDailyTimesService.authenticate`.
+- `ODT_LOGIN_USERNAME` / `ODT_LOGIN_PASSWORD` — Otago Daily Times subscriber credentials, used against the Piano ID login (`id-au.piano.io`) in `OtagoDailyTimesService.authenticate`. That method has **two** entry points, because the workflow opens a `news_item` link directly rather than the home page: on a premium article Piano pops a subscription offer dialog (iframe `id^="offer-"`) whose "Already a subscriber? Sign in" (`a.sign-in-bold`) opens the login form, and everywhere else the header control (`div.sign-in-button button`) does. The login form always lands in a separate iframe `id^="piano-id"` — do not target it via `.tp-modal iframe` (matches the offer dialog too) or via `src`, since both iframes carry the id host in their query string.
 - `HEADLESS` — `'true'`/`'false'` for Playwright.
 
 ## Conventions

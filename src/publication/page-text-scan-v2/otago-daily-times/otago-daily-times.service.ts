@@ -22,12 +22,26 @@ export class OtagoDailyTimesService implements ScannerProps {
       return;
     }
 
-    await page.locator('div.sign-in-button button').first().click();
+    // This workflow opens a news_item link directly, so on a premium article Piano pops a subscription
+    // offer dialog instead of leaving the header as the way in. It is injected asynchronously, so give
+    // it a chance to show up before falling back to the header control.
+    const offerDialog = page.locator('iframe[id^="offer-"]');
+    await offerDialog.waitFor({ timeout: 15000 }).catch(() => {});
 
-    // The Piano ID login form is served from id-au.piano.io inside an iframe in the .tp-modal overlay.
-    // Note the password input carries no name attribute, so it has to be matched on type.
-    await page.locator('.tp-modal iframe').first().waitFor();
-    const piano = page.frameLocator('.tp-modal iframe').first();
+    if ((await offerDialog.count()) > 0) {
+      // "Already a subscriber? Sign in" inside the offer dialog swaps it for the login form
+      this.logger.log('Signing in to Otago Daily Times via the subscription dialog.');
+      await page.frameLocator('iframe[id^="offer-"]').locator('a.sign-in-bold').click();
+    } else {
+      this.logger.log('Signing in to Otago Daily Times via the header.');
+      await page.locator('div.sign-in-button button').first().click();
+    }
+
+    // Either way the Piano ID login form lands in its own iframe, id-prefixed piano-id. Match on that
+    // rather than on .tp-modal iframe, which also matches the offer dialog, or on the src, which
+    // contains the id host on both iframes. Note the password input carries no name attribute, so it
+    // has to be matched on type.
+    const piano = page.frameLocator('iframe[id^="piano-id"]');
     await piano.locator('input[name="email"]').fill(this.configService.get('ODT_LOGIN_USERNAME'));
     await piano.locator('input[type="password"]').fill(this.configService.get('ODT_LOGIN_PASSWORD'));
     await piano
