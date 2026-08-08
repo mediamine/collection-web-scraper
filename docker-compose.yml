@@ -16,6 +16,14 @@ services:
     volumes:
       - ./logs/page-text-scan/:/usr/src/app/logs/
     restart: always
+  collection-web-scraper-page-text-scan-v2:
+    image: mediamine/collection-web-scraper:latest
+    container_name: mediamine-collection-web-scraper-page-text-scan-v2
+    environment:
+      WORKFLOW: WORKFLOW_PAGE_TEXT_SCAN_V2
+    volumes:
+      - ./logs/page-text-scan-v2/:/usr/src/app/logs/
+    restart: always
   collection-web-scraper-rss-scan:
     image: mediamine/collection-web-scraper:latest
     container_name: mediamine-collection-web-scraper-rss-scan

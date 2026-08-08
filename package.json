@@ -24,7 +24,8 @@
     "nest:service": "nest g service",
     "prisma:generate": "prisma generate",
     "start:complete-scan": "yarn start [workflow=WORKFLOW_COMPLETE_SCAN]",
-    "start:page-text-scan": "yarn start [workflow=WORKFLOW_PAGE_TEXT_SCAN]"
+    "start:page-text-scan": "yarn start [workflow=WORKFLOW_PAGE_TEXT_SCAN]",
+    "start:page-text-scan-v2": "yarn start [workflow=WORKFLOW_PAGE_TEXT_SCAN_V2]"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

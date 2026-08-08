@@ -3,15 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import {
   FEEDS_TO_IDS_COMPLETE_SCAN,
   FEEDS_TO_IDS_PAGE_TEXT_SCAN,
+  FEEDS_TO_IDS_PAGE_TEXT_SCAN_V2,
   FEEDS_TO_IDS_RSS_SCAN,
   WORKFLOW,
   WORKFLOW_COMPLETE_SCAN,
   WORKFLOW_PAGE_TEXT_SCAN,
+  WORKFLOW_PAGE_TEXT_SCAN_V2,
   WORKFLOW_RSS_SCAN
 } from './constant';
 import { PrismaService } from './db';
 import { WinstonLoggerService } from './logger';
-import { CompleteScanService, PageTextScanService, RssScanService } from './workflow';
+import { CompleteScanService, PageTextScanService, PageTextScanV2Service, RssScanService } from './workflow';
 
 @Injectable()
 export class AppService {
@@ -21,6 +23,7 @@ export class AppService {
     private prismaService: PrismaService,
     private completeScanService: CompleteScanService,
     private pageTextScanService: PageTextScanService,
+    private pageTextScanV2Service: PageTextScanV2Service,
     private rssScanService: RssScanService
   ) {
     this.logger.setContext(AppService.name);
@@ -85,6 +88,34 @@ export class AppService {
           }
         } catch (e) {
           this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_PAGE_TEXT_SCAN}. ${e.message}`);
+        }
+        break;
+
+      case WORKFLOW_PAGE_TEXT_SCAN_V2:
+        try {
+          const feedsToIdsPageTextScanV2: Record<string, Array<string>> = JSON.parse(
+            this.configService.get<string>(FEEDS_TO_IDS_PAGE_TEXT_SCAN_V2) ?? '{}'
+          );
+
+          const feeds = Object.entries(feedsToIdsPageTextScanV2).reduce((memo, [feedType, feedIds]) => {
+            feedIds.forEach((f) => {
+              memo[f] = feedType;
+            });
+            return memo;
+          }, {});
+          this.logger.debug(`Received feeds for page text scans v2: ${JSON.stringify(feeds)}`);
+
+          for (const feedId of Object.keys(feeds)) {
+            const feed = await this.prismaService.feed.findUnique({ where: { id: Number(feedId) } });
+
+            try {
+              await this.pageTextScanV2Service.scan({ feed, feedScraper: feeds[feedId] });
+            } catch (e) {
+              this.logger.error(`Failed scan for: ${feed.name}. ${e.message}`);
+            }
+          }
+        } catch (e) {
+          this.logger.error(`Error parsing feed list: ${FEEDS_TO_IDS_PAGE_TEXT_SCAN_V2}. ${e.message}`);
         }
         break;
 

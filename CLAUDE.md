@@ -35,11 +35,18 @@ yarn test:playwright       # delegates to `yarn --cwd test playwright test`
 
 `AppService.scrape()` ([src/app.service.ts](src/app.service.ts)) branches on the `WORKFLOW` env var into one of three workflows. For each, it parses a `FEEDS_TO_IDS_*` env var — a JSON object mapping a **scraper token** to an array of `feed` table IDs — inverts it to `feedId -> scraperToken`, loads each `feed` row from the DB, and calls the workflow's `scan({ feed, feedScraper })`.
 
-The three workflows (in [src/workflow/](src/workflow/)):
+The four workflows (in [src/workflow/](src/workflow/)):
 
 - **WORKFLOW_COMPLETE_SCAN** — opens Playwright, scrapes section home pages for article links, inserts new `news_item` rows, then visits each article page to fill `page_text`.
 - **WORKFLOW_PAGE_TEXT_SCAN** — does *not* discover links; only fills `page_text` for existing `news_item` rows that have none (used for sites where links arrive by other means).
+- **WORKFLOW_PAGE_TEXT_SCAN_V2** — as above, plus it re-scrapes rows whose `page_text` is shorter than `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT`, which recovers articles saved with only a paywall teaser. Deliberately isolated from `WORKFLOW_PAGE_TEXT_SCAN` — separate module, scrapers, config and container — so it currently serves only Otago Daily Times and cannot affect the v1 feeds.
 - **WORKFLOW_RSS_SCAN** — discovers items via RSS (no browser); uses the item's RSS `description` as `page_text`.
+
+Note the two page-text workflows also differ in a bug: v1's link guard is called negated
+(`!isPageTextScanExcludedConditions(link)`) even though the helper already returns "link is allowed", so
+v1 skips everything except `businessdesk.co.nz/journalist/` URLs. v2's guard is called un-negated, like
+complete-scan's. Fixing v1 would re-activate page-text scraping for the Stuff and NBR feeds, so it was
+left alone deliberately.
 
 ### The scraper-token DI pattern (central to the architecture)
 
@@ -73,16 +80,18 @@ Complete-scan scrapers live under [src/publication/complete-scan/](src/publicati
 - Connection is `DATABASE_URL`; the DB is shared/legacy and managed elsewhere — **do not run migrations from here**, only `prisma generate`.
 - `news_item.id` is `BigInt` and is assigned manually as `max(id) + index + 1` (no autoincrement). [src/main.ts](src/main.ts) patches `BigInt.prototype.toJSON` so logs/serialization don't throw.
 - Deduplication is by `hashcode` = `hashIt(feedId + title + link + description)`, with a unique index on `news_item.hashcode`.
-- "Needs page text" is modeled as `page_text === '' || page_text === null`, queried in two passes and concatenated.
+- "Needs page text" is modeled as `page_text === '' || page_text === null`, queried in two passes and concatenated. Page-text-scan-v2 adds a third pass for short-but-non-empty text; since Prisma's query API has no string-length filter, that one is a `$queryRaw` returning ids only, which are then re-hydrated through `findMany` so all passes yield full `news_item` rows.
 
 ## Configuration
 
 Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first found wins per key). Key variables:
 
-- `WORKFLOW` — `WORKFLOW_COMPLETE_SCAN` | `WORKFLOW_PAGE_TEXT_SCAN` | `WORKFLOW_RSS_SCAN` (selects the branch in `AppService`).
-- `FEEDS_TO_IDS_COMPLETE_SCAN` / `_PAGE_TEXT_SCAN` / `_RSS_SCAN` — JSON `{ "<scraper token>": ["<feedId>", …] }`.
+- `WORKFLOW` — `WORKFLOW_COMPLETE_SCAN` | `WORKFLOW_PAGE_TEXT_SCAN` | `WORKFLOW_PAGE_TEXT_SCAN_V2` | `WORKFLOW_RSS_SCAN` (selects the branch in `AppService`).
+- `FEEDS_TO_IDS_COMPLETE_SCAN` / `_PAGE_TEXT_SCAN` / `_PAGE_TEXT_SCAN_V2` / `_RSS_SCAN` — JSON `{ "<scraper token>": ["<feedId>", …] }`. A feed id must appear in only one of these, or two containers will scrape it concurrently.
+- `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT` — re-scrape threshold in characters for page-text-scan-v2 only; unset or `0` disables it and the workflow logs a warning. For ODT, full articles run ~2300-4400 chars and teaser/RSS descriptions ~100-160, so the threshold belongs in the gap.
 - `DATABASE_URL` — Postgres connection.
 - `STUFF_LOGIN_USERNAME` / `STUFF_LOGIN_PASSWORD` — credentials for Stuff-network logins (group-a `authenticate`).
+- `ODT_LOGIN_USERNAME` / `ODT_LOGIN_PASSWORD` — Otago Daily Times subscriber credentials, used against the Piano ID login (`id-au.piano.io`) in `OtagoDailyTimesService.authenticate`.
 - `HEADLESS` — `'true'`/`'false'` for Playwright.
 
 ## Conventions
