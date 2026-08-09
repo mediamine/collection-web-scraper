@@ -8,7 +8,9 @@ module.exports = {
   plugins: ['@typescript-eslint/eslint-plugin'],
   extends: [
     'plugin:@typescript-eslint/recommended',
-    'plugin:prettier/recommended',
+    // eslint-config-prettier — disables ESLint rules that conflict with Prettier.
+    // Prettier is run separately (yarn format / format:check), not as an ESLint rule.
+    'prettier',
   ],
   root: true,
   env: {

@@ -9,6 +9,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "postinstall-temp": "yarn run prisma:generate",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -59,7 +60,6 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
     "prettier-plugin-organize-imports": "^4.1.0",
