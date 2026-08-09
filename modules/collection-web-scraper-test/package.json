@@ -6,14 +6,14 @@
   "author": "MohsinKhan-MediaMine <mohsin@mediamine.co.nz>",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^25.0.2",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.4.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "luxon": "^3.7.2",
     "playwright-msteams-reporter": "^0.0.13",
-    "prettier": "^3.7.4",
+    "prettier": "^3.9.6",
     "prettier-plugin-organize-imports": "^4.3.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.0.0"

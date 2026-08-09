@@ -25,13 +25,11 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
     // Pick a random article from the list returned
     let article = articles[Math.floor(Math.random() * articles.length)];
     // & keep picking again until it has a valid link url
-    while (
-      !(
-        article.link &&
-        !/https[^\s]+https[^\s]+/.test(article.link) &&
-        !['www.ensemblemagazine.co.nz', 'sponsoredinteractive.stuff.co.nz'].some((d) => article.link.includes(d))
-      )
-    ) {
+    while (!(
+      article.link &&
+      !/https[^\s]+https[^\s]+/.test(article.link) &&
+      !['www.ensemblemagazine.co.nz', 'sponsoredinteractive.stuff.co.nz'].some((d) => article.link.includes(d))
+    )) {
       article = articles[Math.floor(Math.random() * articles.length)];
     }
 
