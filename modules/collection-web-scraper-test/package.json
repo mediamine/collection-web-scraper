@@ -11,16 +11,17 @@
     "dotenv": "^17.2.3",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
     "luxon": "^3.7.2",
     "playwright-msteams-reporter": "^0.0.13",
     "prettier": "^3.7.4",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0"
   },
   "scripts": {
     "format": "prettier --write \"tests/**/*.ts\"",
-    "lint": "eslint \"{tests}/**/*.ts\" --fix",
+    "format:check": "prettier --check \"tests/**/*.ts\"",
+    "lint": "eslint \"tests/**/*.ts\" --fix",
     "test": "playwright test"
   }
 }
