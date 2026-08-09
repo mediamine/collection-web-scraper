@@ -38,7 +38,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   });
 });
 
-async function authenticate({ }: AuthenticateFnProps) { }
+async function authenticate({}: AuthenticateFnProps) {}
 
 async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
   url = 'https://www.stuff.co.nz';
@@ -63,7 +63,7 @@ async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkPr
       articles.map(async (article) => ({
         link: `${url}${await article.getAttribute('href')}`,
         title: (await article.locator(page.locator('h3')).innerText()) as string,
-        description: (await article.locator(page.locator('h3')).innerText()) as string,
+        description: (await article.locator(page.locator('h3')).innerText()) as string
       }))
     ))
   ];
@@ -85,4 +85,4 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
   };
 }
 
-async function logout({ }: AuthenticateFnProps) { }
+async function logout({}: AuthenticateFnProps) {}

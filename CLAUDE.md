@@ -32,7 +32,7 @@ yarn test:playwright       # delegates to `yarn --cwd test playwright test`
 
 `yarn test:e2e` is the unused NestJS template default; the real end-to-end suite is Playwright under [test/](test/).
 
-Formatting and linting are deliberately separate concerns: **Prettier** owns formatting (`format` / `format:check`) and **ESLint** does code quality only. [.eslintrc.js](.eslintrc.js) extends `eslint-config-prettier` (not `plugin:prettier/recommended`), so ESLint does *not* run Prettier as a rule — don't re-add `eslint-plugin-prettier`.
+Formatting and linting are deliberately separate concerns: **Prettier** owns formatting (`format` / `format:check`) and **ESLint** does code quality only. [.eslintrc.js](.eslintrc.js) extends `eslint-config-prettier` (not `plugin:prettier/recommended`), so ESLint does *not* run Prettier as a rule — don't re-add `eslint-plugin-prettier`. The [modules/collection-web-scraper-test/](modules/collection-web-scraper-test/) workspace follows the same split but is on **ESLint 9**, so it uses flat config ([eslint.config.mjs](modules/collection-web-scraper-test/eslint.config.mjs) with `typescript-eslint`, non-type-checked so no tsconfig is required) rather than `.eslintrc.js`. The two ESLint setups are on different majors and are not interchangeable.
 
 ## How a scrape runs
 
@@ -102,4 +102,4 @@ Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first foun
 - Logging goes through `WinstonLoggerService` (transient-scoped, daily-rotated files under `./logs/` plus console); call `this.logger.setContext(X.name)` in each service constructor.
 - `tsconfig.json` has `strictNullChecks: false` and `noImplicitAny: false` — the code leans on this; `feed`/`news_item` fields are frequently nullable in the schema but used as if present.
 - Workflow `scan` methods are intentionally fault-tolerant: per-item failures are caught and logged so one bad article/feed doesn't abort the session; the browser is always closed in `finally`.
-- The Playwright suite in [test/](test/) is a standalone workspace (its own `package.json`/`node_modules`) that scrapes real sites and reports to MS Teams when `TESTS_WEBHOOK_URL` is set — it duplicates scraper logic for live verification rather than importing `src/`.
+- Live verification runs from **standalone Playwright workspaces** that scrape real sites and report to MS Teams when `TESTS_WEBHOOK_URL` is set — they duplicate scraper logic rather than importing `src/`. Two exist, each with its own `package.json`/`node_modules`/lockfile (so a dependency change needs a `yarn install` in that folder): [test/](test/), invoked from the repo root via `yarn test:playwright`, and the newer [modules/collection-web-scraper-test/](modules/collection-web-scraper-test/) (Playwright 1.57, ESLint 9 flat config, more spec files) which is run on its own.

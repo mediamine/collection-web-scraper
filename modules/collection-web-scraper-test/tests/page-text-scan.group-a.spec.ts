@@ -95,10 +95,16 @@ async function authenticate({ page }: AuthenticateFnProps) {
   await piano.locator('input[name="email"]').fill(process.env['ODT_LOGIN_USERNAME']);
   // Note the password input carries no name attribute, so it has to be matched on type
   await piano.locator('input[type="password"]').fill(process.env['ODT_LOGIN_PASSWORD']);
-  await piano.locator('button.btn', { hasText: /sign in/i }).first().click();
+  await piano
+    .locator('button.btn', { hasText: /sign in/i })
+    .first()
+    .click();
 
   // The header swaps SIGN IN for SIGN OUT once authenticated
-  await page.getByRole('button', { name: /sign out/i }).first().waitFor();
+  await page
+    .getByRole('button', { name: /sign out/i })
+    .first()
+    .waitFor();
 }
 
 async function getLinks({ page, url }: ScanFnProps): Promise<Array<TeaserLinkProps>> {
@@ -151,6 +157,12 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
 async function logout({ page }: AuthenticateFnProps) {
   // Piano tracks concurrent sessions per subscriber account, so release this one. Note the same
   // div.sign-in-button wrapper is used signed in or out, so assert on the button label coming back.
-  await page.getByRole('button', { name: /sign out/i }).first().click();
-  await page.getByRole('button', { name: /sign in/i }).first().waitFor();
+  await page
+    .getByRole('button', { name: /sign out/i })
+    .first()
+    .click();
+  await page
+    .getByRole('button', { name: /sign in/i })
+    .first()
+    .waitFor();
 }

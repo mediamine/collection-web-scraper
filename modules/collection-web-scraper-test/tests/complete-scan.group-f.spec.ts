@@ -42,7 +42,7 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   });
 });
 
-async function authenticate({ }: AuthenticateFnProps) { }
+async function authenticate({}: AuthenticateFnProps) {}
 
 async function getLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
   // Wait for page to load
@@ -77,4 +77,4 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
   };
 }
 
-async function logout({ }: AuthenticateFnProps) { }
+async function logout({}: AuthenticateFnProps) {}
