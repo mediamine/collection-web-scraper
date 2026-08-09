@@ -57,7 +57,7 @@ export class OtagoDailyTimesService implements ScannerProps {
       .waitFor();
   }
 
-  async scanHome({ }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
+  async scanHome({}: ScanFnProps): Promise<Array<ArticleLinkProps>> {
     return [];
   }
 

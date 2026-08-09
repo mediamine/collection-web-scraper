@@ -16,8 +16,9 @@ yarn prisma:generate       # REQUIRED before build/start — generates Prisma cl
 yarn build                 # nest build
 yarn start                 # run one scrape session (reads WORKFLOW env var)
 yarn start:dev             # watch mode
-yarn lint                  # eslint --fix over {src,apps,libs,test}
-yarn format                # prettier
+yarn lint                  # eslint --fix over {src,apps,libs,test} — code-quality rules only
+yarn format                # prettier --write over src/ and test/
+yarn format:check          # prettier --check (verify formatting, e.g. in CI) — writes nothing
 
 # Jest unit tests (*.spec.ts under src/)
 yarn test                  # all unit tests
@@ -30,6 +31,8 @@ yarn test:playwright       # delegates to `yarn --cwd test playwright test`
 ```
 
 `yarn test:e2e` is the unused NestJS template default; the real end-to-end suite is Playwright under [test/](test/).
+
+Formatting and linting are deliberately separate concerns: **Prettier** owns formatting (`format` / `format:check`) and **ESLint** does code quality only. [.eslintrc.js](.eslintrc.js) extends `eslint-config-prettier` (not `plugin:prettier/recommended`), so ESLint does *not* run Prettier as a rule — don't re-add `eslint-plugin-prettier`.
 
 ## How a scrape runs
 

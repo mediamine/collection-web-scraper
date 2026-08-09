@@ -21,4 +21,4 @@ import { CompleteScanModule, PageTextScanModule, PageTextScanV2Module, RssScanMo
   controllers: [],
   providers: [AppService, WinstonLoggerService]
 })
-export class AppModule { }
+export class AppModule {}

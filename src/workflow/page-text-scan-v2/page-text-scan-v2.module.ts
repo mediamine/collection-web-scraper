@@ -14,4 +14,4 @@ import { PageTextScanV2Service } from './page-text-scan-v2.service';
   ],
   exports: [PageTextScanV2Service, NEWS_ITEM_SOURCE_OTAGO_DAILY_TIMES]
 })
-export class PageTextScanV2Module { }
+export class PageTextScanV2Module {}

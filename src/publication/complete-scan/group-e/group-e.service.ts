@@ -8,7 +8,7 @@ export class GroupEService implements ScannerProps {
   constructor(
     protected configService: ConfigService,
     protected logger: WinstonLoggerService
-  ) { }
+  ) {}
 
   async authenticate({ page }: AuthenticateFnProps) {
     await this.logger.debug('Starting authenticate');
@@ -54,16 +54,16 @@ export class GroupEService implements ScannerProps {
         } catch (e) {
           await this.logger.error('Unable to resolve article title');
         }
-        return ({
+        return {
           link: `${url}${link}`,
           title,
           description: ''
-        })
+        };
       })
     );
   }
 
-  async scanHome({ }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
+  async scanHome({}: ScanFnProps): Promise<Array<ArticleLinkProps>> {
     return [];
   }
 
@@ -77,7 +77,7 @@ export class GroupEService implements ScannerProps {
     const textContents: Array<string> = ([] as Array<string>).concat(
       await page.locator('div.text-block > p').allTextContents(),
       await page.locator('div.text-block > div.paywall > p').allTextContents(),
-      await page.locator('div[data-testid="body-paragraph"] > p').allTextContents(),
+      await page.locator('div[data-testid="body-paragraph"] > p').allTextContents()
     );
 
     return {

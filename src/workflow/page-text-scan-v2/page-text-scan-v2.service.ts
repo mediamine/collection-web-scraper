@@ -59,7 +59,7 @@ export class PageTextScanV2Service {
       const existingNewsItemHashWithNoPageText = uniqBy([...newsItemsWithNoPageText, ...newsItemsWithShortPageText], 'id');
       this.logger.log(
         `Found ${newsItemsWithNoPageText.length} News Items with blank Page Text & ` +
-        `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
+          `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
       );
 
       if (existingNewsItemHashWithNoPageText.length > 0) {
