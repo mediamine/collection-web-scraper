@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "statusMessage": "Running yarn lint + yarn format",
+            "timeout": 120,
+            "command": "tr '\\134' '/' | grep -qE '\"file_path\"[[:space:]]*:[[:space:]]*\"[^\"]*/(src|test)/[^\"]*\\.ts\"' || exit 0; cd \"${CLAUDE_PROJECT_DIR:-.}\" || exit 0; out=$(yarn lint 2>&1 && yarn format 2>&1) || { printf '%s\\n' \"$out\" >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  }
+}
