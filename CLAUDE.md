@@ -45,11 +45,13 @@ The four workflows (in [src/workflow/](src/workflow/)):
 - **WORKFLOW_PAGE_TEXT_SCAN_V2** — as above, plus it re-scrapes rows whose `page_text` is shorter than `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT`, which recovers articles saved with only a paywall teaser. Deliberately isolated from `WORKFLOW_PAGE_TEXT_SCAN` — separate module, scrapers, config and container — so it currently serves only Otago Daily Times and cannot affect the v1 feeds.
 - **WORKFLOW_RSS_SCAN** — discovers items via RSS (no browser); uses the item's RSS `description` as `page_text`.
 
-Note the two page-text workflows also differ in a bug: v1's link guard is called negated
-(`!isPageTextScanExcludedConditions(link)`) even though the helper already returns "link is allowed", so
-v1 skips everything except `businessdesk.co.nz/journalist/` URLs. v2's guard is called un-negated, like
-complete-scan's. Fixing v1 would re-activate page-text scraping for the Stuff and NBR feeds, so it was
-left alone deliberately.
+Both page-text workflows call their link guard **un-negated** (`if (link && isPageTextScan…(link))`), like
+complete-scan does — the helper returns "this link is allowed". v1 previously negated it, which inverted
+the meaning so that the only thing it scraped was `businessdesk.co.nz/journalist/` author pages; that was
+fixed, which also re-activated page-text scraping for the Stuff and NBR feeds after a long dormancy.
+Their scrapers had drifted while dormant and were refreshed against the live sites — all three
+page-text publications are covered by [page-text-scan.group-a.spec.ts](modules/collection-web-scraper-test/tests/page-text-scan.group-a.spec.ts),
+which is the source of truth for their selectors.
 
 ### The scraper-token DI pattern (central to the architecture)
 
@@ -94,6 +96,8 @@ Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first foun
 - `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT` — re-scrape threshold in characters for page-text-scan-v2 only; unset or `0` disables it and the workflow logs a warning. For ODT, full articles run ~2300-4400 chars and teaser/RSS descriptions ~100-160, so the threshold belongs in the gap.
 - `DATABASE_URL` — Postgres connection.
 - `STUFF_LOGIN_USERNAME` / `STUFF_LOGIN_PASSWORD` — credentials for Stuff-network logins (group-a `authenticate`).
+- `BD_LOGIN_USERNAME` / `BD_LOGIN_PASSWORD` — **no longer used.** `BusinessDeskService` is scraped anonymously: `authenticate`/`logout` are no-ops. A paywalled BD article renders no `div.article-body` at all, only a ~515-540 char teaser as raw text inside `div.paywall` (no `<p>` children), while a free article renders the full `div.article-body` (~11k chars). `scanArticle` handles both and throws when neither is present, since returning `''` would blank an existing `page_text` — v1 has no "don't overwrite" guard, that is v2-only.
+- `NBR_LOGIN_USERNAME` / `NBR_LOGIN_PASSWORD` — National Business Review subscriber credentials. `authenticate` navigates straight to `nbr.co.nz/Security/login/?BackURL=%2F` rather than hunting a header link (the workflow opens a `news_item` link, not the home page), fills `input[name="Email"]` / `input[name="Password"]`, and submits `input[type="submit"][name="action_doLogin"]` — the control is an `<input>`, not a `<button>`. Success is the header's **My Account** link; `.toggle-menu` is present signed in or out, so it is not a usable signal. Signed out an NBR article yields only a ~290 char teaser versus thousands signed in, so a short `page_text` means the session was lost. The account is single-session: two concurrent NBR logins log each other out.
 - `ODT_LOGIN_USERNAME` / `ODT_LOGIN_PASSWORD` — Otago Daily Times subscriber credentials, used against the Piano ID login (`id-au.piano.io`) in `OtagoDailyTimesService.authenticate`. That method has **two** entry points, because the workflow opens a `news_item` link directly rather than the home page: on a premium article Piano pops a subscription offer dialog (iframe `id^="offer-"`) whose "Already a subscriber? Sign in" (`a.sign-in-bold`) opens the login form, and everywhere else the header control (`div.sign-in-button button`) does. The login form always lands in a separate iframe `id^="piano-id"` — do not target it via `.tp-modal iframe` (matches the offer dialog too) or via `src`, since both iframes carry the id host in their query string.
 - `HEADLESS` — `'true'`/`'false'` for Playwright.
 

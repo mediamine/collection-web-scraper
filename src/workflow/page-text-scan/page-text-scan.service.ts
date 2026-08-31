@@ -41,7 +41,7 @@ export class PageTextScanService {
           this.logger.log(`Scraping article pages for News Items: [${existingNewsItemHashWithNoPageText.map((ni) => ni.id)}]`);
           for (const [, newsItem] of existingNewsItemHashWithNoPageText.entries()) {
             const { id, link } = newsItem;
-            if (link && !isPageTextScanExcludedConditions(link)) {
+            if (link && isPageTextScanExcludedConditions(link)) {
               try {
                 const { text } = await feedScraperService.scanArticle({ page, url: link });
                 this.logger.log(`Persisting Page Text: ${text.slice(0, 25)}... for News Item: ${id}`);
