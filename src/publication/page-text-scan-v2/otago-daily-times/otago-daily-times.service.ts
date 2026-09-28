@@ -65,14 +65,21 @@ export class OtagoDailyTimesService implements ScannerProps {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     // Free articles render the body as div#article-body, paywalled ones as div#article_body_paywall.
-    // Both carry the article-body class, so match on that rather than on either id. The body is client
-    // rendered, so it has to be waited for. A locked article never renders one, which means the Piano
-    // session isn't entitled — throw rather than returning '' so the workflow logs it and leaves any
-    // existing page text intact.
+    // Both carry the article-body class, so match on that rather than on either id.
+    //
+    // The container alone proves nothing: ODT serves it EMPTY and Piano fills it client-side only once
+    // entitlement is confirmed, so waiting for the element and reading straight away hands back ''.
+    // Waiting for the element was only catching the paywall by accident — an empty div has no size, so
+    // the default visibility wait timed out. Wait for real text instead, and throw rather than return
+    // an empty string, which the workflow would persist over a News Item that has no page text yet.
     try {
-      await page.locator('div.article-body').first().waitFor();
+      await page.waitForFunction(
+        () =>
+          Array.from(document.querySelectorAll('div.article-body p:not(.paywallbox)')).some((p) => (p.textContent ?? '').trim().length > 0),
+        { timeout: 20000 }
+      );
     } catch {
-      throw new Error(`No article body found — article is paywall-locked: ${url}`);
+      throw new Error(`Article body never filled — not entitled or paywall-locked: ${url}`);
     }
 
     // Article Text. :not(.paywallbox) drops the paywall prompt Piano can inject into the body.

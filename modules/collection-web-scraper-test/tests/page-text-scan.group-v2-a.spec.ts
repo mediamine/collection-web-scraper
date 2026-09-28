@@ -1,18 +1,49 @@
 import { expect, test } from '@playwright/test';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from './types';
 
-// Otago Daily Times premium articles are locked behind a Piano paywall: logged out, the article page
-// renders no .article-body at all, so 0 chars come back. A substantial text length here therefore
-// proves the Piano login worked and the subscription is live.
-const MIN_PAGE_TEXT_CHAR_COUNT = 500;
+// Otago Daily Times premium articles are locked behind a Piano paywall. The body container is served
+// EMPTY and Piano injects the paragraphs client-side once it has confirmed entitlement, and
+// scanArticle throws when it never fills — so for a randomly picked premium article ANY text at all is
+// the proof that the login worked. A floor is not usable there: ODT runs premium pieces as short as a
+// 179 char photo caption, which used to fail this suite at random.
+const MIN_PAGE_TEXT_CHAR_COUNT = 0;
+// The pinned articles below are known long-form, so they get a real floor on top of the ending check.
+const MIN_PINNED_PAGE_TEXT_CHAR_COUNT = 500;
+
+// Articles that came back with no page_text from a production run. Each is checked against the last
+// sentence of its body, so a truncated scrape fails rather than passing on a partial read. The body
+// carries on with the author's byline email after this, hence toContain rather than an exact match.
+const PREVIOUSLY_EMPTY_ARTICLES = [
+  {
+    link: 'https://www.odt.co.nz/news/dunedin/community-groups-funding-reduced-after-council-bungle-l4yzpjyr',
+    endsWith: 'that was actually available.'
+  },
+  {
+    link: 'https://www.odt.co.nz/news/dunedin/a-unique-gift-tertiary-student-urges-peers-to-join-bone-marrow-registry-e3al45xy',
+    endsWith: 'diverse population.'
+  },
+  {
+    link: 'https://www.odt.co.nz/news/dunedin/dunedin-cancer-patient-failed-by-health-system-gets-200k-drug-lifeline-m8a2k032',
+    endsWith: 'he feels like he has hope.'
+  },
+  {
+    link: 'https://www.odt.co.nz/news/dunedin/bat-myths-bite-the-dust-in-new-research-bq9jkq40',
+    endsWith: 'diseases in the future.'
+  }
+];
+
+// ODT's copy is littered with non-breaking spaces and double spaces — 'he feels like he has hope.'
+// contains an nbsp, for instance — so body text is compared on normalised whitespace.
+const normaliseWhitespace = (text: string) => text.replace(/\s+/g, ' ');
 
 type TeaserLinkProps = ArticleLinkProps & { premium: boolean };
 
-[{ name: 'Otago Daily Times', url: 'https://www.odt.co.nz', section: '/news/dunedin' }].forEach(({ name, url, section }) => {
+test.describe('page-text-scan group-v2-a', () => {
   // This is the path the page-text-scan-v2 workflow itself takes: it opens a news_item link directly,
   // never the home page, so authenticating has to work from the subscription dialog.
-  test(`testing ${name} at ${url} signing in from the subscription dialog`, async ({ page }) => {
-    const article = await pickPremiumArticle({ page, url: `${url}${section}` });
+  test('testing Otago Daily Times at https://www.odt.co.nz signing in from the subscription dialog', async ({ page }) => {
+    const url = 'https://www.odt.co.nz';
+    const article = await pickPremiumArticle({ page, url: `${url}/news/dunedin` });
 
     await page.goto(article.link, { waitUntil: 'domcontentloaded' });
 
@@ -32,17 +63,36 @@ type TeaserLinkProps = ArticleLinkProps & { premium: boolean };
 
   // The fallback path: no subscription dialog is shown, so the header control is the way in. Happens
   // whenever the first link the workflow opens is a free article.
-  test(`testing ${name} at ${url} signing in from the header`, async ({ page }) => {
+  test('testing Otago Daily Times at https://www.odt.co.nz signing in from the header', async ({ page }) => {
+    const url = 'https://www.odt.co.nz';
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     expect(await page.locator('iframe[id^="offer-"]').count()).toBe(0);
 
     await authenticate({ page });
 
-    const article = await pickPremiumArticle({ page, url: `${url}${section}` });
+    const article = await pickPremiumArticle({ page, url: `${url}/news/dunedin` });
 
     const { text } = await scanArticle({ page, url: article.link });
     console.log(`Scraped ${text.length} chars of page text.`);
     expect(text.length).toBeGreaterThan(MIN_PAGE_TEXT_CHAR_COUNT);
+
+    await logout({ page });
+  });
+
+  // Picking one random premium article only samples the section, so the articles a production run came
+  // back empty on are pinned here and scanned in sequence, the way the workflow loops them.
+  test('testing Otago Daily Times articles that previously returned no page text', async ({ page }) => {
+    await page.goto(PREVIOUSLY_EMPTY_ARTICLES[0].link, { waitUntil: 'domcontentloaded' });
+
+    await authenticate({ page });
+
+    for (const { link, endsWith } of PREVIOUSLY_EMPTY_ARTICLES) {
+      const { text } = await scanArticle({ page, url: link });
+      console.log(`Scraped ${text.length} chars from ${link.split('/').pop()}`);
+
+      expect(text.length).toBeGreaterThan(MIN_PINNED_PAGE_TEXT_CHAR_COUNT);
+      expect(normaliseWhitespace(text)).toContain(normaliseWhitespace(endsWith));
+    }
 
     await logout({ page });
   });
@@ -142,7 +192,22 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
 
   // Free articles render the body as div#article-body, paywalled ones as div#article_body_paywall.
   // Both carry the article-body class, so match on that rather than on either id.
-  await page.locator('div.article-body').first().waitFor();
+  //
+  // The container alone proves nothing: it is served EMPTY and Piano fills it client-side only once
+  // entitlement is confirmed, so waiting for the element and reading straight away hands back ''.
+  // Wait for real text instead, and throw rather than return an empty string the workflow would
+  // happily persist over a News Item that has no page text yet.
+  try {
+    await page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('div.article-body p:not(.paywallbox)')).some(
+          (p) => (p.textContent ?? '').trim().length > 0
+        ),
+      { timeout: 20000 }
+    );
+  } catch {
+    throw new Error(`Article body never filled — not entitled or paywall-locked: ${url}`);
+  }
 
   // Article Text. :not(.paywallbox) drops the paywall prompt Piano can inject into the body.
   const textContents: Array<string> = ([] as Array<string>).concat(
