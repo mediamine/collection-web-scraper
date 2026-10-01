@@ -3,6 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { WinstonLoggerService } from 'src/logger';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps, ScannerProps } from '../../types';
 
+// Piano fills the body in one write, but not necessarily by the first read: a locked or metered page
+// renders only a lead/teaser paragraph. Reading on the first non-empty poll truncated articles to their
+// standfirst, so the body is read only once its length has settled.
+const ARTICLE_BODY_SELECTOR = 'div.article-body p:not(.paywallbox)';
+const BODY_SETTLE_POLL_MS = 250;
+const BODY_SETTLE_POLLS = 3;
+const BODY_SETTLE_TIMEOUT_MS = 20000;
+
 @Injectable()
 export class OtagoDailyTimesService implements ScannerProps {
   constructor(
@@ -67,29 +75,45 @@ export class OtagoDailyTimesService implements ScannerProps {
     // Free articles render the body as div#article-body, paywalled ones as div#article_body_paywall.
     // Both carry the article-body class, so match on that rather than on either id.
     //
-    // The container alone proves nothing: ODT serves it EMPTY and Piano fills it client-side only once
-    // entitlement is confirmed, so waiting for the element and reading straight away hands back ''.
-    // Waiting for the element was only catching the paywall by accident — an empty div has no size, so
-    // the default visibility wait timed out. Wait for real text instead, and throw rather than return
-    // an empty string, which the workflow would persist over a News Item that has no page text yet.
-    try {
-      await page.waitForFunction(
-        () =>
-          Array.from(document.querySelectorAll('div.article-body p:not(.paywallbox)')).some((p) => (p.textContent ?? '').trim().length > 0),
-        { timeout: 20000 }
-      );
-    } catch {
+    // ODT serves the container EMPTY and Piano fills it client-side only once entitlement is confirmed,
+    // so neither the element's presence nor a first non-empty read proves the body is complete.
+    const text = await this.readSettledArticleText({ page });
+
+    // A subscription offer still on screen means this session was never entitled, so whatever rendered
+    // is a teaser — refuse it rather than persist a truncated body over a News Item.
+    if ((await page.locator('iframe[id^="offer-"]').count()) > 0) {
+      throw new Error(`Subscription offer still showing — session is not entitled: ${url}`);
+    }
+
+    if (text.length === 0) {
       throw new Error(`Article body never filled — not entitled or paywall-locked: ${url}`);
     }
 
-    // Article Text. :not(.paywallbox) drops the paywall prompt Piano can inject into the body.
-    const textContents: Array<string> = ([] as Array<string>).concat(
-      await page.locator('div.article-body p:not(.paywallbox)').allTextContents()
-    );
+    return { text };
+  }
 
-    return {
-      text: textContents.join('')
-    };
+  // Article Text. :not(.paywallbox) drops the paywall prompt Piano can inject into the body. Polls until
+  // the joined length holds steady, so a body still being written isn't mistaken for a complete one.
+  private async readSettledArticleText({ page }: AuthenticateFnProps): Promise<string> {
+    const deadline = Date.now() + BODY_SETTLE_TIMEOUT_MS;
+    let text = '';
+    let previousLength = -1;
+    let unchangedPolls = 0;
+
+    while (Date.now() < deadline) {
+      text = (await page.locator(ARTICLE_BODY_SELECTOR).allTextContents()).join('');
+
+      if (text.length > 0 && text.length === previousLength) {
+        if (++unchangedPolls >= BODY_SETTLE_POLLS) return text;
+      } else {
+        unchangedPolls = 0;
+      }
+
+      previousLength = text.length;
+      await page.waitForTimeout(BODY_SETTLE_POLL_MS);
+    }
+
+    return text;
   }
 
   async logout({ page }: AuthenticateFnProps) {
