@@ -53,6 +53,15 @@ Their scrapers had drifted while dormant and were refreshed against the live sit
 page-text publications are covered by [page-text-scan.group-a.spec.ts](modules/collection-web-scraper-test/tests/page-text-scan.group-a.spec.ts),
 which is the source of truth for their selectors.
 
+The RSS workflow (Beehive, Newstalk ZB) fetches feeds through `RssParserService`
+([rss-parser.service.ts](src/browser/rss-parser/rss-parser.service.ts)), which sends a **browser User-Agent**
+on purpose. Beehive sits behind Imperva Incapsula, which answers `rss-parser`'s default `User-Agent: rss-parser`
+with an HTML bot challenge, so a `sax` error such as `Attribute without value … Char: >` means a site returned
+HTML instead of XML, not that the feed is malformed. An item with an empty `<description>` (ZB does ship these)
+is inserted but given no `page_text`. Both feeds are covered by
+[rss-scan.group-a.spec.ts](modules/collection-web-scraper-test/tests/rss-scan.group-a.spec.ts), one test per
+Newstalk ZB section feed.
+
 ### The scraper-token DI pattern (central to the architecture)
 
 Scraper classes are **not** referenced directly by the workflow. Instead:
@@ -106,4 +115,4 @@ Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first foun
 - Logging goes through `WinstonLoggerService` (transient-scoped, daily-rotated files under `./logs/` plus console); call `this.logger.setContext(X.name)` in each service constructor.
 - `tsconfig.json` has `strictNullChecks: false` and `noImplicitAny: false` — the code leans on this; `feed`/`news_item` fields are frequently nullable in the schema but used as if present.
 - Workflow `scan` methods are intentionally fault-tolerant: per-item failures are caught and logged so one bad article/feed doesn't abort the session; the browser is always closed in `finally`.
-- Live verification runs from **standalone Playwright workspaces** that scrape real sites and report to MS Teams when `TESTS_WEBHOOK_URL` is set — they duplicate scraper logic rather than importing `src/`. Two exist, each with its own `package.json`/`node_modules`/lockfile (so a dependency change needs a `yarn install` in that folder): [test/](test/), invoked from the repo root via `yarn test:playwright`, and the newer [modules/collection-web-scraper-test/](modules/collection-web-scraper-test/) (Playwright 1.57, ESLint 9 flat config, more spec files) which is run on its own.
+- Live verification runs from **standalone Playwright workspaces** that scrape real sites and report to MS Teams when `TESTS_WEBHOOK_URL` is set — they duplicate scraper logic rather than importing `src/`. Two exist, each with its own `package.json`/`node_modules`/lockfile (so a dependency change needs a `yarn install` in that folder): [test/](test/), invoked from the repo root via `yarn test:playwright`, and the newer [modules/collection-web-scraper-test/](modules/collection-web-scraper-test/) (Playwright 1.62, ESLint 9 flat config, more spec files, `rss-parser` for the RSS spec) which is run on its own.
