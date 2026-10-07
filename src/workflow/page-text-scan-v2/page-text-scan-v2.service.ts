@@ -59,7 +59,7 @@ export class PageTextScanV2Service {
       const existingNewsItemHashWithNoPageText = uniqBy([...newsItemsWithNoPageText, ...newsItemsWithShortPageText], 'id');
       this.logger.log(
         `Found ${newsItemsWithNoPageText.length} News Items with blank Page Text & ` +
-        `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
+          `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
       );
 
       if (existingNewsItemHashWithNoPageText.length > 0) {
@@ -78,6 +78,18 @@ export class PageTextScanV2Service {
             const { id, link, page_text, date, date_downloaded } = newsItem;
             if (link && isPageTextScanV2ExcludedConditions(link)) {
               try {
+                // An article dated after we recorded the download leaves Date Downloaded behind the
+                // article's own date, which also skews the window the candidate queries above measure.
+                // Realign it before scraping, so it is corrected even when the scrape yields nothing or
+                // throws on an article this session is not entitled to.
+                if (date && (!date_downloaded || date.getTime() > date_downloaded.getTime())) {
+                  this.logger.log(`Advancing Date Downloaded to the article Date: ${date.toISOString()} for News Item: ${id}`);
+                  await this.prismaService.news_item.update({
+                    where: { id },
+                    data: { date_downloaded: date }
+                  });
+                }
+
                 const { text } = await feedScraperService.scanArticle({ page, url: link });
 
                 // Never let a failed re-scrape wipe page text we already have
@@ -86,18 +98,10 @@ export class PageTextScanV2Service {
                   continue;
                 }
 
-                // An article dated after we recorded the download leaves Date Downloaded behind the
-                // article's own date, which also skews the window the candidate queries above measure.
-                // Bring it forward to match.
-                const dateDownloadedIsBehind = date && (!date_downloaded || date.getTime() > date_downloaded.getTime());
-                if (dateDownloadedIsBehind) {
-                  this.logger.log(`Advancing Date Downloaded to the article Date: ${date.toISOString()} for News Item: ${id}`);
-                }
-
                 this.logger.log(`Persisting Page Text: ${text.slice(0, 25)}... for News Item: ${id}`);
                 await this.prismaService.news_item.update({
                   where: { id },
-                  data: { page_text: text, ...(dateDownloadedIsBehind ? { date_downloaded: date } : {}) }
+                  data: { page_text: text }
                 });
               } catch (e) {
                 this.logger.error(`Error scanning text for ${link}. Exception: ${e.message}`);
