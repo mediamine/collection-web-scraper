@@ -59,7 +59,7 @@ export class PageTextScanV2Service {
       const existingNewsItemHashWithNoPageText = uniqBy([...newsItemsWithNoPageText, ...newsItemsWithShortPageText], 'id');
       this.logger.log(
         `Found ${newsItemsWithNoPageText.length} News Items with blank Page Text & ` +
-          `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
+        `${newsItemsWithShortPageText.length} with fewer than ${minCharCount} characters.`
       );
 
       if (existingNewsItemHashWithNoPageText.length > 0) {
@@ -75,7 +75,7 @@ export class PageTextScanV2Service {
 
           this.logger.log(`Scraping article pages for News Items: [${existingNewsItemHashWithNoPageText.map((ni) => ni.id)}]`);
           for (const [, newsItem] of existingNewsItemHashWithNoPageText.entries()) {
-            const { id, link, page_text } = newsItem;
+            const { id, link, page_text, date, date_downloaded } = newsItem;
             if (link && isPageTextScanV2ExcludedConditions(link)) {
               try {
                 const { text } = await feedScraperService.scanArticle({ page, url: link });
@@ -86,10 +86,18 @@ export class PageTextScanV2Service {
                   continue;
                 }
 
+                // An article dated after we recorded the download leaves Date Downloaded behind the
+                // article's own date, which also skews the window the candidate queries above measure.
+                // Bring it forward to match.
+                const dateDownloadedIsBehind = date && (!date_downloaded || date.getTime() > date_downloaded.getTime());
+                if (dateDownloadedIsBehind) {
+                  this.logger.log(`Advancing Date Downloaded to the article Date: ${date.toISOString()} for News Item: ${id}`);
+                }
+
                 this.logger.log(`Persisting Page Text: ${text.slice(0, 25)}... for News Item: ${id}`);
                 await this.prismaService.news_item.update({
                   where: { id },
-                  data: { page_text: text }
+                  data: { page_text: text, ...(dateDownloadedIsBehind ? { date_downloaded: date } : {}) }
                 });
               } catch (e) {
                 this.logger.error(`Error scanning text for ${link}. Exception: ${e.message}`);
