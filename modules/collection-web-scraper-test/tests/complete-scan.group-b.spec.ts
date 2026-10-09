@@ -18,19 +18,25 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
 
     const articles = await getLinks({ page, url });
 
-    // Pick a random article from the list returned
-    let article = articles[Math.floor(Math.random() * articles.length)];
-    // & keep picking again until it has a valid link url
-    while (!(
-      article.link &&
-      !/https[^\s]+https[^\s]+/.test(article.link) &&
-      !['www.ensemblemagazine.co.nz', 'sponsoredinteractive.stuff.co.nz'].some((d) => article.link.includes(d))
-    )) {
-      article = articles[Math.floor(Math.random() * articles.length)];
-    }
+    // Video-led articles (~6%) have no body paragraphs at all, so try up to 3 articles & expect text from one of them
+    const tried: Array<string> = [];
+    let text = '';
+    while (!text.length && tried.length < 3) {
+      // Pick a random article from the list returned
+      let article = articles[Math.floor(Math.random() * articles.length)];
+      // & keep picking again until it has a valid link url
+      while (!(
+        article.link &&
+        !/https[^\s]+https[^\s]+/.test(article.link) &&
+        !['www.ensemblemagazine.co.nz', 'sponsoredinteractive.stuff.co.nz'].some((d) => article.link.includes(d))
+      )) {
+        article = articles[Math.floor(Math.random() * articles.length)];
+      }
 
-    const { text } = await scanArticle({ page, url: article.link });
-    expect(text.length).toBeGreaterThanOrEqual(0);
+      tried.push(article.link);
+      ({ text } = await scanArticle({ page, url: article.link }));
+    }
+    expect(text.length, `No article text in any of: ${tried.join(', ')}`).toBeGreaterThan(0);
 
     await logout({ page });
   });

@@ -73,6 +73,11 @@ export class CompleteScanService {
         if (link && isCompleteScanExcludedConditions(link)) {
           try {
             const { text } = await feedScraperService.scanArticle({ page, url: link });
+            // An empty scrape usually means the article selectors no longer match the page, so flag it instead of storing nothing
+            if (!text) {
+              this.logger.warn(`Skipped News Item: ${id}, as the scrape of ${link} came back empty.`);
+              continue;
+            }
             this.logger.log(`Persisting Page Text: ${text.slice(0, 15)}...${text.slice(-15)} for News Item: ${id}`);
             await this.prismaService.news_item.update({
               where: { id },

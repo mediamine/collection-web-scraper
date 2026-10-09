@@ -17,31 +17,24 @@ export class GroupBService implements ScannerProps {
     url = 'https://www.stuff.co.nz';
 
     // Wait for page to load
-    await page.locator('div.story-card.story1.lead a').waitFor();
-    await page.locator('div.story-card.story2 a').waitFor();
-    await page.locator('div.story-card.secondary a').first().waitFor();
+    await page.locator('div[data-testid="grid-row"] [data-testid="grid-card-content"] > a').first().waitFor();
 
-    // Find all articles under each sub-section
-    const articles = [
-      await page.locator('div.story-card.story1.lead a'),
-      await page.locator('div.story-card.story2 a'),
-      ...(await page.locator('div.story-card.secondary a').all())
-    ];
+    // Find all article links in every grid row
+    const articles = [...(await page.locator('div[data-testid="grid-row"] [data-testid="grid-card-content"] > a').all())];
 
     // Extract & return all links, titles & descriptions for each article
-    return [
-      ...(await Promise.all(
-        articles.map(async (article) => ({
-          link: `${url}${await article.getAttribute('href')}`,
-          title: (await article.locator(page.locator('span.heading-text')).innerText()) as string,
-          description: (await article.locator(page.locator('p.common-text-body')).innerText()) as string
-        }))
-      ))
-    ];
+    return await Promise.all(
+      articles.map(async (article) => {
+        const link = `${url}${await article.getAttribute('href')}`;
+        const title = (await article.locator(page.locator('h3')).innerText()) as string;
+        // The cards carry no standfirst, only the headline, so it doubles as the description
+        return { link, title, description: title };
+      })
+    );
   }
 
   async scanHome({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
-    await page.locator('div.frame-container.top-stories-section-frame').waitFor();
+    await page.locator('section.page-content').waitFor();
 
     try {
       // Create a list of all links

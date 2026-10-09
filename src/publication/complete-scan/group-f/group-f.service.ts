@@ -53,7 +53,8 @@ export class GroupFService implements ScannerProps {
     // Article Text
     const textContents: Array<string> = ([] as Array<string>).concat(
       await page.locator('div.text-block > p').allTextContents(),
-      await page.locator('div.text-block > div.paywall > p').allTextContents()
+      await page.locator('div.text-block > div.paywall > p').allTextContents(),
+      await page.locator('div[data-testid="body-paragraph"] > p').allTextContents()
     );
 
     return {
