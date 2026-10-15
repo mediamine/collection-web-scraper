@@ -1,18 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { role } from 'src/testing/mock-playwright';
+import { describeSectionScraper } from 'src/testing/scraper-testing';
+import { GroupEService } from '../group-e.service';
 import { ThePost3Service } from './the-post.service';
 
-describe('ThePost3Service', () => {
-  let service: ThePost3Service;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [ThePost3Service]
-    }).compile();
-
-    service = module.get<ThePost3Service>(ThePost3Service);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+describeSectionScraper(ThePost3Service, GroupEService, {
+  anchor: role('button', 'Toggle navigation menu'),
+  sections: ['NZ news', 'Politics', 'Business', 'Culture', 'Opinion', 'Sport', 'World']
 });

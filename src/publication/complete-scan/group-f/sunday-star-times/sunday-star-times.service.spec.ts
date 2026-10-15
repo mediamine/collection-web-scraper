@@ -1,18 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { describeEmptySubclass } from 'src/testing/scraper-testing';
+import { GroupFService } from '../group-f.service';
 import { SundayStarTimesSubscription2Service } from './sunday-star-times.service';
 
-describe('SundayStarTimesSubscription2Service', () => {
-  let service: SundayStarTimesSubscription2Service;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [SundayStarTimesSubscription2Service]
-    }).compile();
-
-    service = module.get<SundayStarTimesSubscription2Service>(SundayStarTimesSubscription2Service);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});
+describeEmptySubclass(SundayStarTimesSubscription2Service, GroupFService);

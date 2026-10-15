@@ -23,6 +23,11 @@ COPY .env ./
 
 RUN yarn prisma:generate
 
+# Gate the image on the unit tests and their coverage thresholds. They mock the database, browser and
+# network, so they need nothing beyond the generated Prisma client. The container runs `yarn start`, not
+# `yarn build`, so the prebuild hook alone wouldn't cover this path.
+RUN yarn test:ci && rm -rf coverage
+
 # Creates a "dist" folder with the production build
 # RUN yarn build
 

@@ -1,18 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { role } from 'src/testing/mock-playwright';
+import { describeSectionScraper } from 'src/testing/scraper-testing';
+import { GroupDService } from '../group-d.service';
 import { WaikatoTimes2Service } from './waikato-times.service';
 
-describe('WaikatoTimes2Service', () => {
-  let service: WaikatoTimes2Service;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [WaikatoTimes2Service]
-    }).compile();
-
-    service = module.get<WaikatoTimes2Service>(WaikatoTimes2Service);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+describeSectionScraper(WaikatoTimes2Service, GroupDService, {
+  anchor: role('button', 'Toggle navigation menu'),
+  sections: ['NZ news', 'Politics', 'History', 'World news', 'Sport']
 });

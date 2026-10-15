@@ -1,18 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { role } from 'src/testing/mock-playwright';
+import { describeSectionScraper } from 'src/testing/scraper-testing';
+import { GroupDService } from '../group-d.service';
 import { ThePress2Service } from './the-press.service';
 
-describe('ThePressService', () => {
-  let service: ThePress2Service;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [ThePress2Service]
-    }).compile();
-
-    service = module.get<ThePress2Service>(ThePress2Service);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+describeSectionScraper(ThePress2Service, GroupDService, {
+  anchor: role('button', 'Toggle navigation menu'),
+  sections: ['NZ news', 'Opinion', 'South Island', 'Business', 'Politics', 'Sport', 'World news']
 });

@@ -1,18 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { describeSectionScraper } from 'src/testing/scraper-testing';
+import { GroupAService } from '../group-a.service';
 import { ThePressService } from './the-press.service';
 
-describe('ThePressService', () => {
-  let service: ThePressService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [ThePressService]
-    }).compile();
-
-    service = module.get<ThePressService>(ThePressService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+describeSectionScraper(ThePressService, GroupAService, {
+  anchor: '#mastheads_menu',
+  sections: ['NZ news', 'Opinion', 'South Island', 'Business', 'Sport', 'World news']
 });

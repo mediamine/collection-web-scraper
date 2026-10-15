@@ -13,24 +13,24 @@ In production it runs as a Docker container per workflow (see [docker-compose.ym
 ```bash
 yarn                       # install
 yarn prisma:generate       # REQUIRED before build/start — generates Prisma client from prisma/schema.prisma
-yarn build                 # nest build
+yarn build                 # nest build, after the prebuild hook runs `yarn test:ci` — red tests or coverage below threshold stop the build
 yarn start                 # run one scrape session (reads WORKFLOW env var)
 yarn start:dev             # watch mode
-yarn lint                  # eslint --fix over {src,apps,libs,test} — code-quality rules only
-yarn format                # prettier --write over src/ and test/
+yarn lint                  # eslint --fix over {src,apps,libs,test,scripts} — code-quality rules only
+yarn format                # prettier --write over src/, test/ and scripts/
 yarn format:check          # prettier --check (verify formatting, e.g. in CI) — writes nothing
 
-# Jest unit tests (*.spec.ts under src/)
+# Jest unit tests (*.spec.ts under src/ and scripts/)
 yarn test                  # all unit tests
 yarn test -- the-post      # single file/pattern by name
 yarn test:watch
 yarn test:cov
+yarn test:ci               # --ci --coverage, enforcing the coverage thresholds — what the build gates run
+yarn test:report           # test:ci once, then post the result to Teams (see "Unit tests" below)
 
 # Playwright E2E tests (separate suite under test/, hits live news sites)
 yarn test:playwright       # delegates to `yarn --cwd test playwright test`
 ```
-
-`yarn test:e2e` is the unused NestJS template default; the real end-to-end suite is Playwright under [test/](test/).
 
 Formatting and linting are deliberately separate concerns: **Prettier** owns formatting (`format` / `format:check`) and **ESLint** does code quality only. [.eslintrc.js](.eslintrc.js) extends `eslint-config-prettier` (not `plugin:prettier/recommended`), so ESLint does *not* run Prettier as a rule — don't re-add `eslint-plugin-prettier`. The [modules/collection-web-scraper-test/](modules/collection-web-scraper-test/) workspace follows the same split but is on **ESLint 9**, so it uses flat config ([eslint.config.mjs](modules/collection-web-scraper-test/eslint.config.mjs) with `typescript-eslint`, non-type-checked so no tsconfig is required) rather than `.eslintrc.js`. The two ESLint setups are on different majors and are not interchangeable.
 
@@ -42,7 +42,7 @@ The four workflows (in [src/workflow/](src/workflow/)):
 
 - **WORKFLOW_COMPLETE_SCAN** — opens Playwright, scrapes section home pages for article links, inserts new `news_item` rows, then visits each article page to fill `page_text`.
 - **WORKFLOW_PAGE_TEXT_SCAN** — does *not* discover links; only fills `page_text` for existing `news_item` rows that have none (used for sites where links arrive by other means).
-- **WORKFLOW_PAGE_TEXT_SCAN_V2** — as above, plus it re-scrapes rows whose `page_text` is shorter than `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT`, which recovers articles saved with only a paywall teaser. Deliberately isolated from `WORKFLOW_PAGE_TEXT_SCAN` — separate module, scrapers, config and container — so it currently serves only Otago Daily Times and cannot affect the v1 feeds.
+- **WORKFLOW_PAGE_TEXT_SCAN_V2** — as above, plus it re-scrapes rows whose `page_text` is shorter than `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT`, which recovers articles saved with only a paywall teaser. It also realigns `news_item.date_downloaded` to `date` whenever the article's own date is the later of the two, so the one-month candidate window is measured from the article rather than from a stale download stamp. That realignment is its own write, made before the article is scraped, so it still happens when the scrape yields nothing or throws on an article the session is not entitled to. Deliberately isolated from `WORKFLOW_PAGE_TEXT_SCAN` — separate module, scrapers, config and container — so it currently serves only Otago Daily Times and cannot affect the v1 feeds.
 - **WORKFLOW_RSS_SCAN** — discovers items via RSS (no browser); uses the item's RSS `description` as `page_text`.
 
 Both page-text workflows call their link guard **un-negated** (`if (link && isPageTextScan…(link))`), like
@@ -78,14 +78,30 @@ All scrapers implement the `ScannerProps` interface from [src/publication/types.
 
 Complete-scan scrapers live under [src/publication/complete-scan/](src/publication/complete-scan/) grouped `group-a` … `group-f`. **The group, not the publication, owns the scraping logic**: each `group-X.service.ts` is a base class implementing the shared login flow and DOM selectors for a family of sites, and each per-publication subclass typically only overrides the list of sections to scan (see [group-a.service.ts](src/publication/complete-scan/group-a/group-a.service.ts) vs [the-post.service.ts](src/publication/complete-scan/group-a/the-post/the-post.service.ts)). The numbered/`Subscription` variants (`The Post 2`, `… (Subscription)`) are distinct DB feeds reusing the same logic via different group base classes. Page-text and RSS scrapers each implement `ScannerProps` directly.
 
+Group b (stuff.co.nz regional pages) and group f (the regional pages under thepost.co.nz / thepress.co.nz) read the same card markup as group e: `[data-testid="grid-card-content"] > a` with an `h3` headline, and article text from `div[data-testid="body-paragraph"] > p`. **Group c is dead**: it targets the same eight URLs as group f but the retired `ion-card` markup, which no longer exists, and its Playwright spec has been `test.skip` since group f replaced it. Any feed still mapped to an un-numbered `… (Subscription)` token (group c) rather than `… (Subscription) 2` (group f) scrapes nothing. In complete-scan, a `scanArticle` that comes back empty is logged as a warning and not written, so the row stays blank and is retried on the next run. An empty scrape usually means the article selectors have drifted, with one known exception: stuff.co.nz video-led articles (~6% in group b) have no body paragraphs, only a one-line `video-intro` blurb, so they always scrape empty. That is also why the group-b Playwright spec tries up to 3 articles before failing. Group b uses the card headline as the `description` too, since stuff.co.nz cards carry no standfirst.
+
 ## Adding a new scraper
 
 1. Add a token constant in [feedScrapers.ts](src/constant/feedScrapers.ts).
 2. Create the service (usually extend the relevant `group-X.service.ts`, or implement `ScannerProps` for page-text/RSS).
 3. Export it from the matching `src/publication/<workflow>/index.ts` barrel.
 4. Register it in the workflow module's `providers` **and** `exports` as `{ provide: TOKEN, useClass: Service }`.
-5. Add a `*.spec.ts` (the existing unit specs just assert the service is defined).
+5. Add a `*.spec.ts` beside it: `describeSectionScraper` for a subclass that only lists sections, `describeEmptySubclass` for one that adds nothing, otherwise a full spec against `createMockPage` (see "Unit tests"). Add the token to the workflow's `*.module.spec.ts` table too.
 6. Map a feed ID to the token in the relevant `FEEDS_TO_IDS_*` env var.
+
+## Unit tests
+
+Jest runs every `*.spec.ts` under `src/` and `scripts/` with `rootDir` at the repo root; `moduleNameMapper` maps the `'src/...'` imports the code uses everywhere (they resolve through `tsconfig` `baseUrl` at compile time, which Jest's runtime resolver ignores). Coverage thresholds live in `package.json` `jest.coverageThreshold` and are enforced by `test:ci`, which gates both `yarn build` (`prebuild`) and the Docker image (a `RUN yarn test:ci` step, since the container runs `yarn start` rather than `yarn build`).
+
+Specs mock everything external, so they need no database, browser, network or env, only the generated Prisma client. Shared helpers in [src/testing/](src/testing/) (excluded from the build and from coverage):
+
+- `createServiceModule` / `createWorkflowModule` compile the class under test through real Nest DI with mocked `ConfigService`, `WinstonLoggerService` (the real one writes to `./logs`), `PrismaService` and `PlaywrightService`; `createWorkflowModule` registers a mock scraper under `SCRAPER_TOKEN` for the workflow's `ModuleRef` lookup. `pinClock` fixes luxon's clock for the one-month window.
+- `createMockPage({ [key]: spec })` stands in for a Playwright `Page`. Locators are cached by how they were looked up — a CSS selector as-is, or `role()`, `label()`, `testId()`, `inFrame()`, `hasText()` keys — so a spec configures `count`, `innerText`, `allTextContents`, child locators or rejections up front and asserts on `page.locatorFor(key)` afterwards.
+- `compileWorkflowModule` compiles a real workflow module; the `*.module.spec.ts` files use it to prove every `FEEDS_TO_IDS_*` token resolves to its scraper.
+
+**Known defects are pinned as `it.failing`**, asserting the *correct* behaviour so the suite stays green; fixing one turns its test red, and the fix is then to change `it.failing` to `it`. Currently: `PlaywrightService.closeBrowser` throws when no browser was opened (every workflow calls it in `finally`); `AppService` skips every remaining feed after a feed id with no row; page-text-scan v1 opens the browser on `candidates[0].link` only and swallows errors in an empty `catch`; section scrapers' `scanHome` discards every section when one fails and logs via `console.error`; a negative `PAGE_TEXT_SCAN_V2_MIN_CHAR_COUNT` disables v2's short-text pass without its warning.
+
+The daily Teams report is [scripts/unit-test-report/run.ts](scripts/unit-test-report/run.ts) (`yarn test:report`), scheduled on a host by [start-unit-test-report.sh](start-unit-test-report.sh) `[HH:MM] [--pull]` (default 07:00 host time). It wraps a Jest run rather than being a Jest reporter, because Jest runs custom reporters before its coverage reporter. It posts the same Power Automate Adaptive Card envelope as the Playwright workspaces' reporter, with counts, coverage against the thresholds, the first ten failures and, unless green, @mentions; it always exits with Jest's code.
 
 ## Database (Prisma)
 
@@ -109,6 +125,7 @@ Env is loaded by `ConfigModule` from `.env`, `.env.dev`, `.env.prod` (first foun
 - `NBR_LOGIN_USERNAME` / `NBR_LOGIN_PASSWORD` — National Business Review subscriber credentials. `authenticate` navigates straight to `nbr.co.nz/Security/login/?BackURL=%2F` rather than hunting a header link (the workflow opens a `news_item` link, not the home page), fills `input[name="Email"]` / `input[name="Password"]`, and submits `input[type="submit"][name="action_doLogin"]` — the control is an `<input>`, not a `<button>`. Success is the header's **My Account** link; `.toggle-menu` is present signed in or out, so it is not a usable signal. Signed out an NBR article yields only a ~290 char teaser versus thousands signed in, so a short `page_text` means the session was lost. The account is single-session: two concurrent NBR logins log each other out.
 - `ODT_LOGIN_USERNAME` / `ODT_LOGIN_PASSWORD` — Otago Daily Times subscriber credentials, used against the Piano ID login (`id-au.piano.io`) in `OtagoDailyTimesService.authenticate`. That method has **two** entry points, because the workflow opens a `news_item` link directly rather than the home page: on a premium article Piano pops a subscription offer dialog (iframe `id^="offer-"`) whose "Already a subscriber? Sign in" (`a.sign-in-bold`) opens the login form, and everywhere else the header control (`div.sign-in-button button`) does. The login form always lands in a separate iframe `id^="piano-id"` — do not target it via `.tp-modal iframe` (matches the offer dialog too) or via `src`, since both iframes carry the id host in their query string.
 - `HEADLESS` — `'true'`/`'false'` for Playwright.
+- `UNIT_TESTS_WEBHOOK_URL` / `UNIT_TESTS_MENTION_ON_FAILURE` / `UNIT_TESTS_REPORT_ENV` — the daily unit test report only, read by `yarn test:report` from the same three env files in the same order (documented in [.env.example](.env.example)). Separate from the Playwright workspaces' `TESTS_WEBHOOK_URL` so the two can post to different channels. Without the URL the report is only printed.
 
 ## Conventions
 

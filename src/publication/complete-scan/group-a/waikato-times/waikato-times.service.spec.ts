@@ -1,18 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { describeSectionScraper } from 'src/testing/scraper-testing';
+import { GroupAService } from '../group-a.service';
 import { WaikatoTimesService } from './waikato-times.service';
 
-describe('WaikatoTimesService', () => {
-  let service: WaikatoTimesService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [WaikatoTimesService]
-    }).compile();
-
-    service = module.get<WaikatoTimesService>(WaikatoTimesService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+describeSectionScraper(WaikatoTimesService, GroupAService, {
+  anchor: '#mastheads_menu',
+  sections: ['News', 'Politics', 'Business', 'History', 'World news', 'Sport']
 });

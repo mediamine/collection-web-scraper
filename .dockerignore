@@ -10,3 +10,7 @@ README.md
 
 # Enviroment files
 .env.dev
+
+# Test output
+coverage
+reports
