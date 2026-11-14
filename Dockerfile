@@ -1,4 +1,4 @@
-FROM node:20-bookworm
+FROM node:24.22.1-bookworm
 
 # Install playwright with deps
 RUN npx -y playwright@1.47.1 install --with-deps chromium
