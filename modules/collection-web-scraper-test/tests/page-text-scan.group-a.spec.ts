@@ -1,19 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from './types';
 
-// The three page-text-scan publications share a workflow but not a login model or a DOM, so each has
-// its own test and its own set of scraping functions:
+// The three page-text-scan publications share a workflow but not a DOM, so each has its own test and
+// its own set of scraping functions. None of them logs in:
 //
 //   Business Desk  no login. Paywalled articles expose only a ~515 char teaser, free ones the full body.
-//   NBR            logs in. Anonymous articles return a ~290 char teaser, so clearing 1000 chars is
-//                  itself the proof that the session worked.
+//   NBR            no login. Paywalled articles expose only a ~290 char teaser.
 //   Stuff          no login, no paywall.
 
-// A Business Desk teaser runs ~515 chars and a Stuff article runs into the thousands, so this only has
-// to be high enough to catch an empty or broken scrape.
+// A NBR teaser runs ~290 chars, a Business Desk one ~515 and a Stuff article runs into the thousands,
+// so this only has to be high enough to catch an empty or broken scrape.
 const MIN_PAGE_TEXT_CHAR_COUNT = 200;
-// No NBR teaser reaches this, so passing it means the session was live.
-const NBR_MIN_PAGE_TEXT_CHAR_COUNT = 1000;
 
 test.describe('page-text-scan group-a', () => {
   test('testing Business Desk at https://businessdesk.co.nz', async ({ page }) => {
@@ -51,7 +48,7 @@ test.describe('page-text-scan group-a', () => {
 
     const { text } = await scanNationalBusinessReviewArticle({ page, url: article.link });
     console.log(`[National Business Review] Scraped ${text.length} chars of page text.`);
-    expect(text.length).toBeGreaterThan(NBR_MIN_PAGE_TEXT_CHAR_COUNT);
+    expect(text.length).toBeGreaterThan(MIN_PAGE_TEXT_CHAR_COUNT);
 
     await logoutNationalBusinessReview({ page });
   });
@@ -135,22 +132,10 @@ async function scanBusinessDeskArticle({ page, url }: ScanFnProps): Promise<Arti
 
 async function logoutBusinessDesk({}: AuthenticateFnProps) {}
 
-/* ------------------------------------------------- National Business Review (needs login) ------- */
+/* ------------------------------------------------- National Business Review (no login) ---------- */
 
-async function authenticateNationalBusinessReview({ page }: AuthenticateFnProps) {
-  // NBR sessions are tied to one shared subscriber account, so two of these running at once will log
-  // each other out — don't run this test in parallel with itself (e.g. --repeat-each with >1 worker).
-  // Going straight to the login form avoids depending on the header's log in control.
-  await page.goto('https://www.nbr.co.nz/Security/login/?BackURL=%2F', { waitUntil: 'domcontentloaded' });
-
-  await page.locator('input[name="Email"]').fill(process.env['NBR_LOGIN_USERNAME']);
-  await page.locator('input[name="Password"]').fill(process.env['NBR_LOGIN_PASSWORD']);
-  // The submit control is an <input type="submit" value="Log in">, not a button element
-  await page.locator('input[type="submit"][name="action_doLogin"]').click();
-
-  // Signed in, the header swaps the log in link for a My Account link
-  await page.getByRole('link', { name: /my account/i }).first().waitFor();
-}
+// NBR is read anonymously, so there is deliberately no login flow
+async function authenticateNationalBusinessReview({}: AuthenticateFnProps) {}
 
 async function getNationalBusinessReviewLinks({ page, url }: ScanFnProps): Promise<Array<ArticleLinkProps>> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -183,8 +168,7 @@ async function scanNationalBusinessReviewArticle({ page, url }: ScanFnProps): Pr
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('div.article-content').waitFor();
 
-  // Article Text. Signed out this returns only the opening teaser, which is why the test asserts a
-  // length no teaser could reach.
+  // Article Text. Read anonymously, a paywalled article returns only the opening teaser (~290 chars).
   const textContents: Array<string> = ([] as Array<string>).concat(await page.locator('div.article-content p').allTextContents());
 
   return {
@@ -192,17 +176,7 @@ async function scanNationalBusinessReviewArticle({ page, url }: ScanFnProps): Pr
   };
 }
 
-async function logoutNationalBusinessReview({ page }: AuthenticateFnProps) {
-  // Best effort — releasing the session is desirable but must not fail the run
-  try {
-    await page.getByRole('link', { name: /my account/i }).first().click();
-    await page.getByRole('link', { name: /log ?out|sign ?out/i }).first().click();
-    await page.getByRole('link', { name: /log ?in/i }).first().waitFor();
-    console.log('[National Business Review] Signed out.');
-  } catch (e: any) {
-    console.log(`[National Business Review] Sign out failed, ignoring: ${e.message.split('\n')[0]}`);
-  }
-}
+async function logoutNationalBusinessReview({}: AuthenticateFnProps) {}
 
 /* ------------------------------------------------------------------------ Stuff (no login) ------ */
 
