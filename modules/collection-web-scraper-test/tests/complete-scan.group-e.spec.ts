@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { errors, expect, test } from '@playwright/test';
 import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from './types';
 
 [
@@ -7,7 +7,9 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
   { name: 'Waikato Times', url: 'https://www.waikatotimes.co.nz', section: 'NZ news' }
 ].forEach(({ name, url, section }) => {
   test(`testing ${name} at ${url} on section ${section}`, async ({ page }) => {
-    await page.goto(url);
+    // Not 'load': these pages are ad-heavy, so with several browsers open at once the load event can take minutes
+    // to fire (or never do). Everything below waits explicitly for the content it needs instead.
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
 
     await authenticate({ page });
 
@@ -41,7 +43,7 @@ async function authenticate({ page }: AuthenticateFnProps) {
 }
 
 async function getLinks({ page, url }: ScanFnProps, section: string): Promise<Array<ArticleLinkProps>> {
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
 
   // Navigate to the section page
   await page.getByRole('button', { name: 'Toggle navigation menu' }).waitFor();
@@ -51,24 +53,39 @@ async function getLinks({ page, url }: ScanFnProps, section: string): Promise<Ar
   await page.getByRole('link', { name: section, exact: true }).first().click();
 
   // Wait for page to load
-  await page.locator('div[data-testid="box-container"]').first().waitFor();
+  await page.locator('div[data-testid="box-container"] article').first().waitFor();
 
-  // Find all articles under each sub-section
-  const articles = [...(await page.locator('div[data-testid="box-container"] article').all())];
-
-  // Extract & return all links, titles & descriptions for each article
-  return await Promise.all(
-    articles.map(async (article) => ({
-      link: `${url}${await article.locator(page.locator('div[data-testid="grid-card-content"] > a').first()).getAttribute('href')}`,
-      title: (await article.locator(page.locator('h3')).innerText()) as string,
-      description: (await article.locator(page.locator('h3')).innerText()) as string
-    }))
+  // Extract & return all links, titles & descriptions for each article under each sub-section, in a single pass.
+  // Don't fan out a getAttribute()/innerText() per article: that is ~3 round trips per article on a busy, ad-heavy
+  // page, and .all() returns positional (nth) locators, so if the list re-renders shorter the remaining calls wait
+  // on articles that no longer exist until the test times out.
+  return await page.evaluate(
+    (base) =>
+      Array.from(document.querySelectorAll('div[data-testid="box-container"] article')).map((article) => {
+        const title = article.querySelector<HTMLElement>('h3')?.innerText ?? '';
+        return {
+          link: `${base}${article.querySelector('div[data-testid="grid-card-content"] > a')?.getAttribute('href')}`,
+          title,
+          description: title
+        };
+      }),
+    url
   );
 }
 
 async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
-  await page.goto(url, { timeout: 60000 });
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('section.page-content').waitFor();
+
+  // The body renders after domcontentloaded, so wait for it before reading or allTextContents() returns [] (almost
+  // always, on these pages). A timeout isn't an error here: the caller's own text-length assertion reports it.
+  await page
+    .locator('div.text-block > p, div.text-block > div.paywall > p, div[data-testid="body-paragraph"] > p')
+    .first()
+    .waitFor({ state: 'attached', timeout: 30000 })
+    .catch((error) => {
+      if (!(error instanceof errors.TimeoutError)) throw error;
+    });
 
   // Article Text
   const textContents: Array<string> = ([] as Array<string>).concat(

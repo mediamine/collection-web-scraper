@@ -18,6 +18,12 @@ const BODY_SETTLE_POLL_MS = 250;
 const BODY_SETTLE_POLLS = 3;
 const BODY_SETTLE_TIMEOUT_MS = 20000;
 
+// The paywall's subscription offer is Piano's modal. Match on that and not on any iframe[id^="offer-"]:
+// Piano also runs promotional offers (a Black Friday ribbon in #piano-bottom-ribbon, say) on EVERY page,
+// signed in or out. They render as offer- iframes too, but carry no sign in link and say nothing about
+// whether the session is entitled, so a bare offer- match is both ambiguous and wrong.
+const PAYWALL_OFFER_SELECTOR = '.tp-modal iframe[id^="offer-"]';
+
 // Articles a production run came back with no, or truncated, page_text for. Each is checked against a
 // phrase deep in its body, so a partial scrape fails rather than passing on the opening paragraph.
 const PREVIOUSLY_EMPTY_ARTICLES = [
@@ -62,8 +68,8 @@ test.describe('page-text-scan group-v2-a', () => {
 
     // Opening a premium article directly pops Piano's subscription offer. Assert it really showed, so
     // this test can't silently degrade into the header sign in path that the next test covers.
-    await page.locator('iframe[id^="offer-"]').waitFor();
-    expect(await page.locator('iframe[id^="offer-"]').count()).toBeGreaterThan(0);
+    await page.locator(PAYWALL_OFFER_SELECTOR).waitFor();
+    expect(await page.locator(PAYWALL_OFFER_SELECTOR).count()).toBeGreaterThan(0);
 
     await authenticate({ page });
 
@@ -79,7 +85,7 @@ test.describe('page-text-scan group-v2-a', () => {
   test('testing Otago Daily Times at https://www.odt.co.nz signing in from the header', async ({ page }) => {
     const url = 'https://www.odt.co.nz';
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    expect(await page.locator('iframe[id^="offer-"]').count()).toBe(0);
+    expect(await page.locator(PAYWALL_OFFER_SELECTOR).count()).toBe(0);
 
     await authenticate({ page });
 
@@ -139,13 +145,13 @@ async function authenticate({ page }: AuthenticateFnProps) {
 
   // Piano injects its subscription offer asynchronously, so give it a chance to show up before
   // deciding which way in to use. On a premium article it appears; elsewhere it never does.
-  const offerDialog = page.locator('iframe[id^="offer-"]');
+  const offerDialog = page.locator(PAYWALL_OFFER_SELECTOR);
   await offerDialog.waitFor({ timeout: 15000 }).catch(() => {});
 
   if ((await offerDialog.count()) > 0) {
     // "Already a subscriber? Sign in" inside the offer dialog swaps it for the login form
     console.log('Signing in via the subscription dialog.');
-    await page.frameLocator('iframe[id^="offer-"]').locator('a.sign-in-bold').click();
+    await page.frameLocator(PAYWALL_OFFER_SELECTOR).locator('a.sign-in-bold').click();
   } else {
     console.log('Signing in via the header.');
     await page.locator('div.sign-in-button button').first().click();
@@ -213,7 +219,7 @@ async function scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
 
   // A subscription offer still on screen means this session was never entitled, so whatever rendered
   // is a teaser — refuse it rather than persist a truncated body over a News Item.
-  if ((await page.locator('iframe[id^="offer-"]').count()) > 0) {
+  if ((await page.locator(PAYWALL_OFFER_SELECTOR).count()) > 0) {
     throw new Error(`Subscription offer still showing — session is not entitled: ${url}`);
   }
 

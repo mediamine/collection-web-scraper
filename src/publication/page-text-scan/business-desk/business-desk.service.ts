@@ -20,33 +20,30 @@ export class BusinessDeskService implements ScannerProps {
   async scanArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-    // A free article renders the full body as div.article-body; a paywalled one renders none of it and
-    // shows a truncated teaser in div.paywall instead. Wait for whichever this article has.
-    await page.locator('div.article-body, div.paywall').first().waitFor();
+    // Every article is first served as a truncated teaser (section.article__body.premium-content), then
+    // the paywall script decides. A free article flips to section.full-content and reveals every
+    // paragraph; a paywalled one gets the #zephr-html-paywall prompt and stays truncated. Reading before
+    // that decision would cut a free article short, so wait for either outcome.
+    await page.locator('section.article__body.full-content, #zephr-html-paywall').first().waitFor({ state: 'attached' });
 
-    const articleBody = page.locator('div.article-body');
-    if ((await articleBody.count()) > 0) {
-      // Article Text
-      const textContents: Array<string> = ([] as Array<string>).concat(await articleBody.locator('p').allTextContents());
-
-      return {
-        text: textContents.join('')
-      };
-    }
-
-    // The teaser is raw text directly inside div.paywall, with no <p> children to collect
-    const paywall = page.locator('div.paywall');
-    if ((await paywall.count()) > 0) {
-      this.logger.debug(`Article is paywalled, persisting the teaser only: ${url}`);
-
-      return {
-        text: await paywall.first().innerText()
-      };
-    }
+    // Article Text. A paywalled article still holds every paragraph in the DOM, hiding all but the teaser
+    // with display:none, and textContent reads straight through that. :visible keeps only the paragraphs
+    // that are rendered, which is what an anonymous reader sees and all this scrape is after.
+    const textContents: Array<string> = await page.locator('section.article__body p:visible').allTextContents();
 
     // Returning '' here would blank any page text the News Item already has, so fail instead and let
     // the workflow log it and move on.
-    throw new Error(`No article body or paywall teaser found: ${url}`);
+    if (textContents.length === 0) {
+      throw new Error(`No article text found: ${url}`);
+    }
+
+    if ((await page.locator('#zephr-html-paywall').count()) > 0) {
+      this.logger.debug(`Article is paywalled, persisting the teaser only: ${url}`);
+    }
+
+    return {
+      text: textContents.join('')
+    };
   }
 
   async logout({}: AuthenticateFnProps) {}

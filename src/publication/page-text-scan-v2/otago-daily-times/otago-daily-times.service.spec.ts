@@ -5,7 +5,8 @@ import { OtagoDailyTimesService } from './otago-daily-times.service';
 const ARTICLE_URL = 'https://www.odt.co.nz/news/dunedin/one';
 const ARTICLE_BODY = 'div.article-body p:not(.paywallbox)';
 const HEADER_SIGN_IN = 'div.sign-in-button button';
-const OFFER = 'iframe[id^="offer-"]';
+// The paywall modal only — Piano's promo ribbons are offer- iframes too, and aren't the paywall
+const OFFER = '.tp-modal iframe[id^="offer-"]';
 const PIANO = 'iframe[id^="piano-id"]';
 const SIGN_OUT = role('button', /sign out/i);
 

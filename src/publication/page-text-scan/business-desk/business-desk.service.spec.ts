@@ -2,7 +2,10 @@ import { createMockPage, MockPage } from 'src/testing/mock-playwright';
 import { createServiceModule } from 'src/testing/scraper-testing';
 import { BusinessDeskService } from './business-desk.service';
 
-const ARTICLE_URL = 'https://businessdesk.co.nz/article/markets/one';
+const ARTICLE_URL = 'https://www.businessdesk.co.nz/markets/one/ABCDEFGHIJKLMNOPQRSTUVWXYZ/';
+const PAYWALL_DECISION = 'section.article__body.full-content, #zephr-html-paywall';
+const RENDERED_PARAGRAPHS = 'section.article__body p:visible';
+const PAYWALL_PROMPT = '#zephr-html-paywall';
 
 describe('BusinessDeskService', () => {
   let service: BusinessDeskService;
@@ -25,35 +28,36 @@ describe('BusinessDeskService', () => {
   });
 
   describe('scanArticle', () => {
-    it('waits for either the article body or the paywall teaser', async () => {
-      page = createMockPage({ 'div.article-body': { count: 1 } });
+    it('waits for the paywall to decide before reading, so a free article is not cut short', async () => {
+      page = createMockPage({ [RENDERED_PARAGRAPHS]: { allTextContents: ['Full body.'] } });
 
       await service.scanArticle({ page, url: ARTICLE_URL });
 
       expect(page.goto).toHaveBeenCalledWith(ARTICLE_URL, { waitUntil: 'domcontentloaded' });
-      expect(page.locatorFor('div.article-body, div.paywall').waitFor).toHaveBeenCalled();
+      expect(page.locatorFor(PAYWALL_DECISION).waitFor).toHaveBeenCalledWith({ state: 'attached' });
     });
 
-    it('joins the paragraphs of a free article', async () => {
-      page = createMockPage({
-        'div.article-body': { count: 1, children: { p: { allTextContents: ['First. ', 'Second.'] } } },
-        'div.paywall': { count: 1, innerText: 'Teaser' }
-      });
+    it('joins the rendered paragraphs of a free article', async () => {
+      page = createMockPage({ [RENDERED_PARAGRAPHS]: { allTextContents: ['First. ', 'Second.'] } });
 
       await expect(service.scanArticle({ page, url: ARTICLE_URL })).resolves.toEqual({ text: 'First. Second.' });
+      expect(logger.debug).not.toHaveBeenCalled();
     });
 
-    it('falls back to the teaser text of a paywalled article', async () => {
-      page = createMockPage({ 'div.paywall': { count: 1, innerText: 'The opening lines of the article…' } });
+    it('persists only the rendered teaser of a paywalled article, not the hidden paragraphs', async () => {
+      page = createMockPage({
+        [RENDERED_PARAGRAPHS]: { allTextContents: ['The opening lines. ', 'And the second.'] },
+        [PAYWALL_PROMPT]: { count: 1 }
+      });
 
-      await expect(service.scanArticle({ page, url: ARTICLE_URL })).resolves.toEqual({ text: 'The opening lines of the article…' });
+      await expect(service.scanArticle({ page, url: ARTICLE_URL })).resolves.toEqual({ text: 'The opening lines. And the second.' });
       expect(logger.debug).toHaveBeenCalledWith(`Article is paywalled, persisting the teaser only: ${ARTICLE_URL}`);
+      // Hidden paragraphs are in the DOM but must never be read, so the unfiltered paragraphs aren't queried
+      expect(page.locator).not.toHaveBeenCalledWith('section.article__body p');
     });
 
-    it('fails rather than return blank text when neither is on the page', async () => {
-      await expect(service.scanArticle({ page, url: ARTICLE_URL })).rejects.toThrow(
-        `No article body or paywall teaser found: ${ARTICLE_URL}`
-      );
+    it('fails rather than return blank text when no paragraph is rendered', async () => {
+      await expect(service.scanArticle({ page, url: ARTICLE_URL })).rejects.toThrow(`No article text found: ${ARTICLE_URL}`);
     });
   });
 });
