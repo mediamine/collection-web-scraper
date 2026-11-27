@@ -11,6 +11,12 @@ const BODY_SETTLE_POLL_MS = 250;
 const BODY_SETTLE_POLLS = 3;
 const BODY_SETTLE_TIMEOUT_MS = 20000;
 
+// The paywall's subscription offer is Piano's modal. Match on that and not on any iframe[id^="offer-"]:
+// Piano also runs promotional offers (a Black Friday ribbon in #piano-bottom-ribbon, say) on EVERY page,
+// signed in or out. They render as offer- iframes too, but carry no sign in link and say nothing about
+// whether the session is entitled, so a bare offer- match is both ambiguous and wrong.
+const PAYWALL_OFFER_SELECTOR = '.tp-modal iframe[id^="offer-"]';
+
 @Injectable()
 export class OtagoDailyTimesService implements ScannerProps {
   constructor(
@@ -33,13 +39,13 @@ export class OtagoDailyTimesService implements ScannerProps {
     // This workflow opens a news_item link directly, so on a premium article Piano pops a subscription
     // offer dialog instead of leaving the header as the way in. It is injected asynchronously, so give
     // it a chance to show up before falling back to the header control.
-    const offerDialog = page.locator('iframe[id^="offer-"]');
+    const offerDialog = page.locator(PAYWALL_OFFER_SELECTOR);
     await offerDialog.waitFor({ timeout: 15000 }).catch(() => {});
 
     if ((await offerDialog.count()) > 0) {
       // "Already a subscriber? Sign in" inside the offer dialog swaps it for the login form
       this.logger.log('Signing in to Otago Daily Times via the subscription dialog.');
-      await page.frameLocator('iframe[id^="offer-"]').locator('a.sign-in-bold').click();
+      await page.frameLocator(PAYWALL_OFFER_SELECTOR).locator('a.sign-in-bold').click();
     } else {
       this.logger.log('Signing in to Otago Daily Times via the header.');
       await page.locator('div.sign-in-button button').first().click();
@@ -81,7 +87,7 @@ export class OtagoDailyTimesService implements ScannerProps {
 
     // A subscription offer still on screen means this session was never entitled, so whatever rendered
     // is a teaser — refuse it rather than persist a truncated body over a News Item.
-    if ((await page.locator('iframe[id^="offer-"]').count()) > 0) {
+    if ((await page.locator(PAYWALL_OFFER_SELECTOR).count()) > 0) {
       throw new Error(`Subscription offer still showing — session is not entitled: ${url}`);
     }
 

@@ -4,11 +4,11 @@ import { ArticleLinkProps, ArticleProps, AuthenticateFnProps, ScanFnProps } from
 // The three page-text-scan publications share a workflow but not a DOM, so each has its own test and
 // its own set of scraping functions. None of them logs in:
 //
-//   Business Desk  no login. Paywalled articles expose only a ~515 char teaser, free ones the full body.
+//   Business Desk  no login. Paywalled articles expose only a ~300-600 char teaser, free ones the full body.
 //   NBR            no login. Paywalled articles expose only a ~290 char teaser.
 //   Stuff          no login, no paywall.
 
-// A NBR teaser runs ~290 chars, a Business Desk one ~515 and a Stuff article runs into the thousands,
+// A NBR teaser runs ~290 chars, a Business Desk one ~300-600 and a Stuff article runs into the thousands,
 // so this only has to be high enough to catch an empty or broken scrape.
 const MIN_PAGE_TEXT_CHAR_COUNT = 200;
 
@@ -83,19 +83,27 @@ async function getBusinessDeskLinks({ page, url }: ScanFnProps): Promise<Array<A
   await page.goto(url, { waitUntil: 'domcontentloaded' });
 
   // Wait for the home page card grid to load
-  await page.locator('div.card.news-card').first().waitFor();
+  await page.locator('article a[href]').first().waitFor();
 
-  // Extracted in a single DOM pass — a locator call per field across ~77 cards costs minutes of
-  // round trips. Note BusinessDesk hrefs are absolute, and not every card links to an article.
-  const articles: Array<ArticleLinkProps> = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('div.card.news-card'))
-      .map((card) => ({
-        link: card.querySelector('a[href*="/article/"]')?.getAttribute('href') ?? '',
-        title: (card.querySelector('.card-title')?.textContent ?? '').trim(),
-        description: (card.querySelector('.card-text')?.textContent ?? '').trim()
-      }))
-      .filter((a) => a.link)
-  );
+  // Extracted in a single DOM pass — a locator call per field across ~100 cards costs minutes of
+  // round trips. Cards carry only utility classes, so they are matched on structure: an <article>
+  // whose links go to /<section>/<slug>/<ID>/. Cards also link section and topic index pages, which
+  // end in no ID and aren't articles. Hrefs read through .href are absolute.
+  const articles: Array<ArticleLinkProps> = await page.evaluate(() => {
+    const isArticleLink = (href: string) => /\/[A-Z0-9]{26}\/?$/.test(href);
+    const seen = new Set<string>();
+
+    return Array.from(document.querySelectorAll('article'))
+      .map((card) => {
+        const anchors = Array.from(card.querySelectorAll('a[href]')).filter((a) => isArticleLink((a as HTMLAnchorElement).href));
+        // The headline is the card's first link with text, the standfirst the next one — both go to
+        // the same article, and not every card has a standfirst.
+        const [title = '', description = ''] = anchors.map((a) => (a.textContent ?? '').trim()).filter(Boolean);
+
+        return { link: (anchors[0] as HTMLAnchorElement)?.href ?? '', title, description };
+      })
+      .filter((a) => a.link && !seen.has(a.link) && seen.add(a.link));
+  });
 
   return articles;
 }
@@ -103,31 +111,27 @@ async function getBusinessDeskLinks({ page, url }: ScanFnProps): Promise<Array<A
 async function scanBusinessDeskArticle({ page, url }: ScanFnProps): Promise<ArticleProps> {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-  // A free article renders the full body as div.article-body; a paywalled one renders none of it and
-  // shows a truncated teaser in div.paywall instead. Wait for whichever this article has.
-  await page.locator('div.article-body, div.paywall').first().waitFor();
+  // Every article is first served as a truncated teaser (section.article__body.premium-content), then
+  // the paywall script decides. A free article flips to section.full-content and reveals every
+  // paragraph; a paywalled one gets the #zephr-html-paywall prompt and stays truncated. Reading before
+  // that decision would cut a free article short, so wait for either outcome.
+  await page.locator('section.article__body.full-content, #zephr-html-paywall').first().waitFor({ state: 'attached' });
 
-  const articleBody = page.locator('div.article-body');
-  if ((await articleBody.count()) > 0) {
-    console.log('[Business Desk] Article is not paywalled — scraping the full body.');
-    const textContents: Array<string> = ([] as Array<string>).concat(await articleBody.locator('p').allTextContents());
+  // A paywalled article still holds every paragraph in the DOM, hiding all but the teaser with
+  // display:none, and textContent reads straight through that. :visible keeps only the paragraphs that
+  // are rendered, which is what an anonymous reader sees and all this scrape is after.
+  const textContents: Array<string> = await page.locator('section.article__body p:visible').allTextContents();
 
-    return {
-      text: textContents.join('')
-    };
+  if (textContents.length === 0) {
+    throw new Error(`No article text found: ${url}`);
   }
 
-  // The teaser is raw text directly inside div.paywall, with no <p> children to collect
-  const paywall = page.locator('div.paywall');
-  if ((await paywall.count()) > 0) {
-    console.log('[Business Desk] Article is paywalled — scraping the teaser.');
+  const isPaywalled = (await page.locator('#zephr-html-paywall').count()) > 0;
+  console.log(`[Business Desk] Article is ${isPaywalled ? 'paywalled — scraping the teaser' : 'not paywalled — scraping the full body'}.`);
 
-    return {
-      text: await paywall.first().innerText()
-    };
-  }
-
-  throw new Error(`No article body or paywall teaser found: ${url}`);
+  return {
+    text: textContents.join('')
+  };
 }
 
 async function logoutBusinessDesk({}: AuthenticateFnProps) {}
